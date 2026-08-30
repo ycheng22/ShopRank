@@ -26,3 +26,12 @@ async def healthz(settings: Settings = Depends(get_app_settings)) -> dict[str, s
         "version": settings.git_sha,
         "retrieval_core": retrieval_core.__version__
     }
+
+@app.get("/ping")
+async def ping(settings: Settings = Depends(get_app_settings)) -> dict[str, str]:  # noqa: B008
+    return {
+        "status": "pong",
+        "version": settings.git_sha,
+        "retrieval_core": retrieval_core.__version__
+    }
+
