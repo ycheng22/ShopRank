@@ -1,0 +1,65 @@
+# Byte-compiled / optimized / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# CPython / distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual Environments (uv / standard)
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets (per AGENTS.md rule)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.neon
+
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+
+# Type checking & linting
+.mypy_cache/
+.ruff_cache/
+
+# Data, embeddings, caches & model weights (per AGENTS.md rule)
+data/
+*.parquet
+*.arrow
+*.bin
+*.pt
+*.safetensors
+models/
+weights/
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Agent tooling & local skills
+.agents/
+skills-lock.json
+
