@@ -48,7 +48,7 @@ jobs:
       
     - name: Build and Push
       env:
-        IMAGE_NAME: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/shoprank-repo/shoprank
+        IMAGE_NAME: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/containers/shoprank
       run: |
         docker build --build-arg GH_PAT=${{ secrets.GH_PAT }} -t $IMAGE_NAME:${{ github.sha }} .
         docker push $IMAGE_NAME:${{ github.sha }}
@@ -57,7 +57,7 @@ jobs:
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: shoprank
-        image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/shoprank-repo/shoprank:${{ github.sha }}
+        image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/containers/shoprank:${{ github.sha }}
         region: ${{ vars.GCP_REGION }}
         env_vars: |
           GIT_SHA=${{ github.sha }}
