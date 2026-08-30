@@ -16,7 +16,9 @@ These rules are binding. If a rule blocks you, stop and report it — do not sil
 - Database and vector store: PostgreSQL + pgvector (Neon free tier). Do not introduce Qdrant, Pinecone, Chroma, Weaviate, Redis, Elasticsearch, or any managed vector service.
 - Embeddings: BGE-M3, dense vectors truncated to 768 dimensions (Matryoshka). Reranking: bge-reranker-v2 locally, a small CPU cross-encoder in production.
 - Never call a paid reranking API (Cohere, Voyage, Jina). This single item can break the budget.
-- Agent framework: LangGraph. Frontend: Angular (ShopRank, TripAgent). Deployment: GCP Cloud Run. Bedrock is used only through the provider abstraction.
+- Agent framework: LangGraph.
+- **Deployment topology.** Frontend: Angular (ShopRank, TripAgent), built as static output and hosted on **Cloudflare Pages** at `<service>.vectorlab.me`. Backend: **GCP Cloud Run**, reached at its own `*.run.app` address — **the API has no custom domain**. Bedrock is used only through the provider abstraction.
+- **Frontend and backend are separate origins.** The API base URL is injected at build time from a CI variable; it is never hard-coded in frontend source, because a `*.run.app` address changes if the service, project, or region changes.
 - All LLM calls go through `providers/`. No direct `openai.`, `anthropic.`, `google.genai`, `ollama.`, or `boto3` calls anywhere else in the codebase.
 - `Retriever` is a `typing.Protocol`, never an abstract base class. An implementation must satisfy it structurally, without inheriting from it — the ablation study swaps retrievers at runtime.
 - **Configuration is injected, never discovered.** The shared library `retrieval-core` MUST NOT read the environment anywhere, at any layer: no `os.environ`, no `os.getenv`, no `load_dotenv`, no module-level lookups, no reading config files from disk. Every setting arrives as an explicit function argument or a typed config object supplied by the caller. This is what makes the library reusable across all three applications; it is not a style preference.
@@ -68,6 +70,7 @@ The eval library is **GateMark**. GitHub repo `ycheng22/gatemark`, PyPI package 
 ## 3. Cost guardrails
 
 - Anonymous visitors may only run pre-computed example queries served from cache. Free-form input requires a user-supplied API key.
+- **Pre-computed example queries are served over `GET /api/search?q=...`** so they are a CORS-simple request (no preflight) and can be cached at the CDN edge. A cached example must render even while Cloud Run is cold-starting or fully down. Free-form input uses `POST` with a user-supplied key and is never cached.
 - Enforce a per-day token quota in the application layer. On exhaustion, degrade to retrieval-only mode — never return an error page.
 - All batch embedding runs use the provider's Batch endpoint and persist results to disk. Re-indexing must never re-pay for embeddings already computed. The on-disk cache key includes the embedding dimension, so a 512- or 1536-dim run never silently reuses 768-dim vectors.
 - Every LLM call site must declare its purpose tag so token cost can be attributed by feature.
@@ -91,6 +94,8 @@ The eval library is **GateMark**. GitHub repo `ycheng22/gatemark`, PyPI package 
 ## 5. Observability, security, and agent safety
 
 - Instrument with OpenTelemetry GenAI semantic conventions from the first commit of a module, not retroactively. Every LLM and retrieval span records model, provider, token counts, latency, and purpose tag.
+- **CORS `allow_origins` is an explicit list of known frontend origins, read from Settings. Never `"*"`, not even in development.** A public API without an origin allow-list is indefensible in an interview.
+- **Container images are tagged with the git SHA, never `latest`.** `latest` makes it impossible to verify which revision is actually running and removes any rollback target.
 - Treat all retrieved content as untrusted input. Retrieved text is never concatenated into a system prompt and never interpreted as instructions.
 - Agent tools are split into read and write. Read tools may execute automatically. Write tools require explicit approval, carry an idempotency key, and emit an audit record.
 - Every agent run enforces three circuit breakers: maximum steps, maximum tokens, maximum monetary cost.
@@ -109,6 +114,7 @@ The eval library is **GateMark**. GitHub repo `ycheng22/gatemark`, PyPI package 
 
 - Do not swap a locked dependency, add a new service, or change the database schema without being asked.
 - **Do not introduce any new read of the environment.** Inside `retrieval-core` this is absolute. Inside an application, the only permitted reader is `app/settings.py`. If a task appears to require a new environment read elsewhere, stop and report it instead of adding one.
+- **Do not add a custom domain mapping for the API, and do not put a Cloudflare proxy (orange cloud) in front of any Google-managed certificate.** The backend is reached at its `*.run.app` address; only the frontend has a custom domain.
 - **Do not use the name `evalgate` anywhere. The package is `gatemark`.**
 - **Do not create a second database, an extra schema, or a second Neon project per application.**
 - **Do not add any database access to `/healthz` or to the keep-alive workflow.**
@@ -132,3 +138,4 @@ The eval library is **GateMark**. GitHub repo `ycheng22/gatemark`, PyPI package 
 6. `docs/DECISIONS.md` updated for any deviation from these rules.
 7. The PR description states what was built, what was measured, and what is still broken or unverified.
 8. No environment reads were added outside `app/settings.py`, and none at all in `retrieval-core`. The config-guard CI job is green.
+9. Any new public endpoint declares its HTTP method deliberately: `GET` for cacheable pre-computed responses, `POST` only where a request body or a user-supplied key is genuinely required.
