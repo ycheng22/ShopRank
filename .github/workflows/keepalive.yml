@@ -24,10 +24,10 @@ jobs:
     - name: Ping targets
       if: steps.check-time.outputs.active == 'true'
       env:
-        TARGETS: '["${{ vars.CLOUD_RUN_URL }}/healthz"]'
+        TARGETS: '["${{ vars.CLOUD_RUN_URL }}/ping"]'
       run: |
         echo $TARGETS | jq -r '.[]' | while read TARGET; do
-          if [ -n "$TARGET" ] && [ "$TARGET" != "null/healthz" ] && [ "$TARGET" != "/healthz" ]; then
+          if [ -n "$TARGET" ] && [ "$TARGET" != "null/ping" ] && [ "$TARGET" != "/ping" ]; then
             echo "Pinging $TARGET"
             curl --fail -s "$TARGET" || exit 1
           fi
