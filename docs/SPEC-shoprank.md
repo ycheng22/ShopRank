@@ -92,37 +92,27 @@
 - 前端 `https://shoprank.vectorlab.me` — Angular 静态产物，Cloudflare Pages
 - 后端 `https://shoprank-xxxxx.<region>.run.app` — FastAPI，Cloud Run，**无自定义域**
 
-因此每一次浏览器调用都是跨源请求，CORS 与 HTTP 方法的选择不是风格问题，而是**冷启动体验与可用性问题**。
+因此每一次浏览器调用都是跨源请求。CORS 与 HTTP 方法的选择不是风格问题，而是**冷启动体验与可用性问题**。
 
-### 22.5.2 数据表
-
-| 表 | 列与索引 |
-| --- | --- |
-| `products` | `product_id` (PK)、`title`、`description`、`brand`、`color`、`locale`、**`product_text`**（title + description 拼接，嵌入与全文检索共用）、`embedding vector(768)`、`tsv tsvector`。索引：`hnsw` on `embedding`（余弦）、`GIN` on `tsv` |
-| `queries` | `query_id` (PK)、`text`、`locale`、`split`、`len_bin`、`difficulty_bin`、`has_complement`、`candidate_size_bin`。分层标签直接存表，评测时可按维度切分报数 |
-| `qrels` | `query_id`、`product_id`、`esci_label`、`gain` |
-| `query_cache` | `cache_key`、`response_json`、`created_at`。预置示例查询的完整结果预先写入这里——招聘方点开时命中缓存，即时返回、零成本，且所有 provider 挂掉时 demo 依然工作 |
-| `eval_runs` | `run_id`、`config_json`、`dataset_version`、`metrics_json`、`created_at`。**消融表直接从这张表生成，不要手工维护 Markdown 表格** |
-
-### 22.5.3 端点契约
+### 22.5.2 端点契约
 
 | 端点 | 契约 |
 | --- | --- |
-| **`GET /api/search`** | 入参 `?q=&locale=`。**只接受预置示例查询**；未命中预置集合返回 400 并提示改用 POST。出参同 `SearchResponse`。选 GET 有三个叠加的理由：① GET + 标准头属 CORS **简单请求，没有 preflight**；② 可被 CDN 边缘缓存，**即使 Cloud Run 正在冷启动或完全挂掉，示例查询仍能秒开**；③ 与 `query_cache` 表构成同一思路的两层缓存。响应头设 `Cache-Control: public, max-age=300, s-maxage=86400` |
-| **`POST /api/search`** | 入参 `{query, locale, config?}`；出参 `SearchResponse{hits[], breakdown[], latency_ms, cache_hit, config_used}`。自由输入路径，**需用户自带 API key**，不缓存。跨域 POST 带 JSON 必然先发一次 `OPTIONS`，冷启动时等于把延迟翻倍——所以这条路径绝不承担"招聘方第一次点开"那个场景 |
+| **`GET /api/search`** | 入参 `?q=&locale=`。**只接受预置示例查询**；未命中预置集合返回 400 并提示改用 POST。出参同 `SearchResponse`。响应头设 `Cache-Control: public, max-age=300, s-maxage=86400`。<br>选 GET 有三个叠加的理由：① GET + 标准头属 CORS **简单请求，没有 preflight**；② 可被 CDN 边缘缓存，**即使 Cloud Run 正在冷启动或完全挂掉，示例查询仍能秒开**；③ 与 `query_cache` 表构成同一思路的两层缓存 |
+| **`POST /api/search`** | 入参 `{query, locale, config?}`；出参 `SearchResponse{hits[], breakdown[], latency_ms, cache_hit, config_used}`。自由输入路径，**需用户自带 API key**，不缓存。跨域 POST 带 JSON 必然先发一次 `OPTIONS`，冷启动时等于把延迟翻倍——所以这条路径**绝不承担"招聘方第一次点开"那个场景** |
 | `GET /api/examples` | 返回 8 条预置示例查询（中英法各若干，刻意包含一条互补品陷阱查询和一条长尾查询）。可缓存 |
 | `GET /api/ablation` | 从 `eval_runs` 读取并返回消融表 JSON，前端与 README 共用同一数据源。可缓存 |
 | `GET /healthz` | 返回 `{"status":"ok","version":"<git sha>"}`。**绝不查询数据库**——没有 `SELECT 1`、没有连接池探测、没有迁移检查。保活任务每 10 分钟打一次，任何 DB 查询都会让 Neon compute 永不休眠、烧穿月度 CU-hours 并导致整个 project 被挂起 |
 
-### 22.5.4 CORS
+### 22.5.3 CORS
 
 - `allow_origins` 是**显式白名单**，从 `Settings` 读取：`https://shoprank.vectorlab.me` 加上本地开发用的 `http://localhost:4200`。
 - **禁止使用 `"*"`，开发环境也不例外。** 面试被问"你的公开 API 怎么防滥用"，显式白名单 + 限流是一个完整答案，`*` 是个扣分项。
 - `allow_methods` 只开 `GET`、`POST`、`OPTIONS`；`allow_credentials` 保持关闭（本 API 不使用 cookie）。
 
-### 22.5.5 前端契约
+### 22.5.4 前端契约
 
-- 后端地址由「服务名-项目号-区域」决定，**换区域或换项目就会变**。前端必须把它作为**构建期环境变量注入**（Angular 的 `environment.prod.ts` 从 CI 变量读），**不得硬编码进源码**。
+- 后端地址由「服务名-项目号-区域」决定，**换区域或换项目就会变**。前端必须把它作为**构建期环境变量注入**（Angular 的 `environment.prod.ts` 从 CI 变量读），**不得硬编码进源码**——这也正好符合 AGENTS.md §4"不得硬编码 endpoint"。
 - 匿名访客只能点击预置示例（走 GET）。自由输入框在用户未提供 API key 时禁用，并提示原因——**不要返回错误页**。
 - 所有请求带超时；后端不可用时降级为展示缓存的示例结果，而非白屏。
 
