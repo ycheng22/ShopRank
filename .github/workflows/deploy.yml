@@ -62,5 +62,6 @@ jobs:
         env_vars: |
           GIT_SHA=${{ github.sha }}
         flags: |
+          --allow-unauthenticated
           --min-instances=0
           --max-instances=3
