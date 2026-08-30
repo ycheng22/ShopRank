@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str = ""
     allowed_origins: list[str] = []
     log_level: str = "INFO"
+    git_sha: str = "dev"
 
     model_config = SettingsConfigDict(
         env_file=".env", 

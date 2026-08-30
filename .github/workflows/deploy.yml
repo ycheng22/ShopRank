@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install uv
+      run: pip install uv
+    - name: Install dependencies
+      run: uv venv && uv pip install -e .[dev]
+    - name: Lint with ruff
+      run: uv run ruff check .
+    - name: Test with pytest
+      run: uv run pytest
+
+  deploy:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      
+    - name: Configure Docker
+      run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
+      
+    - name: Build and Push
+      env:
+        IMAGE_NAME: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/shoprank-repo/shoprank
+      run: |
+        docker build -t $IMAGE_NAME:${{ github.sha }} .
+        docker push $IMAGE_NAME:${{ github.sha }}
+        
+    - name: Deploy to Cloud Run
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: shoprank
+        image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/shoprank-repo/shoprank:${{ github.sha }}
+        region: ${{ vars.GCP_REGION }}
+        env_vars: |
+          GIT_SHA=${{ github.sha }}
+        flags: |
+          --min-instances=0
+          --max-instances=3

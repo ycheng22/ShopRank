@@ -1,0 +1,33 @@
+name: Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Time Window
+      id: check-time
+      run: |
+        # Active from 12:00 to 00:00 UTC (12 hour window)
+        # Adjust as needed
+        HOUR=$(date -u +%H)
+        if [ "$HOUR" -ge 12 ]; then
+          echo "active=true" >> $GITHUB_OUTPUT
+        else
+          echo "active=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Ping targets
+      if: steps.check-time.outputs.active == 'true'
+      env:
+        TARGETS: '["${{ vars.CLOUD_RUN_URL }}/healthz"]'
+      run: |
+        echo $TARGETS | jq -r '.[]' | while read TARGET; do
+          if [ -n "$TARGET" ] && [ "$TARGET" != "null/healthz" ] && [ "$TARGET" != "/healthz" ]; then
+            echo "Pinging $TARGET"
+            curl --fail -s "$TARGET" || exit 1
+          fi
+        done
