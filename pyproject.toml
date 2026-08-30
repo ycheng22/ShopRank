@@ -25,6 +25,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["app", "core", "adapters", "evals"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
 
 [tool.ruff]
 line-length = 88
