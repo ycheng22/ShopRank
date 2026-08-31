@@ -81,3 +81,7 @@ Local deployment is preferred for development and testing, while Docker deployme
 | difficulty_bin: hard iff E-fraction <= 0.312 | 40th pct measured on this variant. HARDCODED — do not recompute from the sample. Note: the same percentile on the full (non-small_version) US set is 0.688, which is why the variant must be frozen. |
 | candidate_size_bin: large iff candidates >= 16 (median), NOT 20 | only 19.5% of queries have >=20 candidates, making the 40/60 target unreachable at the original threshold |
 | has_complement: pool has 25.8%, target >=20% reachable by mild oversampling |
+
+## Database Driver
+- **Driver**: `asyncpg`
+- **Reason**: The project enforces "async-first" execution. While `psycopg2` was present, it is synchronous. `asyncpg` is the standard, high-performance async driver for Postgres in modern Python. Added for Milestone M2 to support `BM25Retriever`.

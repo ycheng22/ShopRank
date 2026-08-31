@@ -12,6 +12,14 @@
 - https://github.com/ycheng22/TripAgent
 - https://github.com/ycheng22/GateMark
 
+## Ablation Results
+
+<!-- ABLATION_START -->
+| Configuration | NDCG@10 | Recall@50 | MRR@10 | p95 Latency (ms) |
+| --- | --- | --- | --- | --- |
+| BM25 Baseline | 0.4188 | 0.5079 | 0.6609 | 210.7 |
+<!-- ABLATION_END -->
+
 ## Metrics & Conventions
 
 Every number in this README was produced by `evals/runner.py` and written to the

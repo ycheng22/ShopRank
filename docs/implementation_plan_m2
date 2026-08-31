@@ -1,0 +1,87 @@
+# Milestone M2 Implementation Plan
+
+This milestone implements the core evaluation metrics, the BM25 baseline retriever, the evaluation runner, and the ablation script, as specified in `docs/SPEC-shoprank.md`. 
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Database Driver**: The project enforces "async-first" execution. Currently, no async Postgres driver (like `psycopg` v3 or `asyncpg`) is listed in `pyproject.toml`. I plan to use `asyncpg` for connecting to the database in `BM25Retriever` and the runner. I will add it to the dependencies and record this in `docs/DECISIONS.md` as per Rule 1. Please confirm if you prefer `psycopg` (v3) instead.
+
+## Open Questions
+
+> [!WARNING]
+> The `PipelineConfig`, `Query`, `Product`, `ScoredHit`, `SearchResponse`, `ScoreBreakdown` models are imported from the `retrieval-core` package. I will assume they are available under `retrieval_core.models` and the retriever protocol under `retrieval_core.retrievers.base`. 
+
+## Proposed Changes
+
+---
+
+### Evaluation Metrics (`evals/metrics.py`)
+
+Implementation of `ndcg_at_k`, `recall_at_k`, and `mrr_at_k`.
+- **Gain Mapping**: Hardcoded to Exact = 3, Substitute = 2, Complement = 1, Irrelevant = 0.
+- **Relevant Definition**: Gain > 0.
+- **Empty qrels Handling**: If a query has empty qrels, the functions return `(0.0, 1)` where `1` indicates the query was skipped. Otherwise, they return `(score, 0)`.
+- **Rank Discount**: `log2(rank + 1)` starting from rank=1.
+
+#### [NEW] [metrics.py](file:///d:/Github_Clones/ShopRank/evals/metrics.py)
+#### [NEW] [test_metrics.py](file:///d:/Github_Clones/ShopRank/tests/test_metrics.py)
+Unit tests for hand-computable toy examples (NDCG, reversed ranking, MRR, recall, skipped counting, bounds checking).
+
+---
+
+### Retrievers (`core/retrievers/bm25.py`)
+
+A BM25 retriever utilizing Postgres Full-Text Search.
+
+#### [NEW] [bm25.py](file:///d:/Github_Clones/ShopRank/core/retrievers/bm25.py)
+- Implements `retrieve(query: Query, top_k: int) -> list[ScoredHit]`.
+- Uses structural typing to satisfy `Retriever` protocol without subclassing.
+- Queries `shoprank` DB's `products` table using `websearch_to_tsquery` against the `tsv` column.
+- Orders by `ts_rank` descending.
+- Exposes `BM25Retriever(database_url: str)`. Configuration is passed in constructor.
+
+---
+
+### Evaluation Runner (`evals/runner.py`)
+
+Runs the pipeline configuration against a dataset split.
+
+#### [NEW] [runner.py](file:///d:/Github_Clones/ShopRank/evals/runner.py)
+- `run(config: PipelineConfig, split: str, dataset_version: str, allow_test: bool = False) -> EvalResult`
+- Orchestrates retrieval for all queries in the split.
+- Calculates averages for NDCG@10, Recall@50, and MRR@10 (ignoring skipped queries).
+- Calculates latency (p50, p95) and cost.
+- Persists result to `evals/results/<run_id>.json` and inserts into `eval_runs` table in the `gatemark` database.
+- Supports `--limit` for smoke testing.
+
+---
+
+### Ablation Script (`evals/ablation.py`)
+
+#### [NEW] [ablation.py](file:///d:/Github_Clones/ShopRank/evals/ablation.py)
+- Reads `eval_runs`.
+- Iterates over a list of `PipelineConfig` variants.
+- Renders a Markdown table containing: config name, NDCG@10, recall@50, MRR@10, p95 latency.
+
+---
+
+### Configuration and Setup Updates
+
+#### [MODIFY] [pyproject.toml](file:///d:/Github_Clones/ShopRank/pyproject.toml)
+- Add `asyncpg` to dependencies.
+
+#### [NEW] [DECISIONS.md](file:///d:/Github_Clones/ShopRank/docs/DECISIONS.md)
+- Document the addition of the new database driver.
+
+## Verification Plan
+
+### Automated Tests
+- `pytest tests/test_metrics.py` to verify metric calculations exactly match expected hand-computed values.
+- `ruff check .` and `mypy .` to ensure compliance with strict linting and typing.
+
+### Manual Verification
+- Run the `BM25` baseline on the dev split.
+- Ensure `evals/results/<run_id>.json` is populated and `eval_runs` table updated.
+- Verify `ablation.py` generates a valid Markdown table.
+- Report numbers in the conversation.

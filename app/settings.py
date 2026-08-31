@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str = ""
+    gatemark_database_url: str = ""
     allowed_origins: list[str] = []
     log_level: str = "INFO"
     git_sha: str = "dev"
