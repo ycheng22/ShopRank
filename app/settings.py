@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = []
     log_level: str = "INFO"
     git_sha: str = "dev"
+    hf_token: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env", 

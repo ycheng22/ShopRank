@@ -92,3 +92,4 @@ Local deployment is preferred for development and testing, while Docker deployme
 ## Dense Retrieval & Fusion Ablation (M3b)
 - **Dense vs BM25**: Pure Dense retrieval explicitly dominates BM25, driving Recall@50 up by a massive **+12.7%** (from 50.9% to 63.6%). The candidate net is successfully catching half of the relevant items BM25 missed.
 - **RRF Hybrid Superiority**: Fusing the BM25 exact-match signals with the Dense semantic signals using Reciprocal Rank Fusion yielded the best overall pipeline. Hybrid pushed **NDCG@10 to 0.5180** and **MRR@10 to 0.7538** without sacrificing the 63.3% recall, proving semantic matching effectively re-ordered the top 10 results. The pipeline concurrently executes in **~279ms (p95)**, satisfying the 800ms budget constraint.
+
