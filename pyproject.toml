@@ -6,7 +6,11 @@ dependencies = [
     "fastapi>=0.110.0",
     "uvicorn>=0.29.0",
     "pydantic-settings>=2.2.1",
-    "retrieval-core @ git+https://github.com/ycheng22/RetrievalCore@v0.1.0"
+    "retrieval-core @ git+https://github.com/ycheng22/RetrievalCore@v0.1.0",
+    "pandas>=3.0.5",
+    "numpy>=2.5.2",
+    "pyarrow>=25.0.1",
+    "jupyter>=1.1.1",
 ]
 
 [project.optional-dependencies]

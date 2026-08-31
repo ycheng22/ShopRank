@@ -69,3 +69,15 @@ Local deployment is preferred for development and testing, while Docker deployme
 
 ## Split search into cacheable 
 | 2026-09-02 | Split search into cacheable `GET` (preset examples) and `POST` (free-form, BYO key); CORS allow-list from Settings, never `*` | Frontend on Cloudflare Pages and API on Cloud Run are different origins. A cross-origin POST always triggers a preflight, doubling latency on a cold start — which is exactly the first impression a recruiter gets. GET keeps preset queries CORS-simple and CDN-cacheable, so they render even while the service is cold or down. | Applies to SPEC 22.5 |
+
+## Dataset Version
+- **Dataset**: Amazon ESCI Dataset (shopping_queries_dataset)
+- **Version/Commit**: `7916cdf6ab75a462e77f20ab40428a10923998d5`
+- **Note**: Every evaluation result must log this commit hash in the `dataset_version` field of the `eval_runs` table to ensure metrics comparability.
+
+## ESCI variant frozen
+| 2026-09-XX | ESCI variant frozen: small_version=1 AND product_locale='us' | 29,844 queries in pool |
+| queries = 1,500 (900/300/300) | dedup is ~nil (19.3 unique products/query), so 1,500 queries ≈ 29k products, just under the 30k cap. Chosen so the cap never binds — a binding cap would drop whole queries and distort the strata. |
+| difficulty_bin: hard iff E-fraction <= 0.312 | 40th pct measured on this variant. HARDCODED — do not recompute from the sample. Note: the same percentile on the full (non-small_version) US set is 0.688, which is why the variant must be frozen. |
+| candidate_size_bin: large iff candidates >= 16 (median), NOT 20 | only 19.5% of queries have >=20 candidates, making the 40/60 target unreachable at the original threshold |
+| has_complement: pool has 25.8%, target >=20% reachable by mild oversampling |
