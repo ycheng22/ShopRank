@@ -99,14 +99,30 @@
 
 | 模块 | 接口契约 |
 | --- | --- |
-| **Retriever 协议**<br>`core/retrievers/base.py` | `retrieve(query: Query, top_k: int) -> list[ScoredHit]`。`ScoredHit` 含 `product_id`、`raw_score`、`retriever_name`、`rank`。必须是 `typing.Protocol` 而非抽象基类——实现方**结构化满足即可，不需要继承**。BM25 与 Dense 实现同一协议，可互换、可并行调用 |
+| **Retriever 协议**<br>`core/retrievers/base.py` | `retrieve(query: Query, top_k: int) -> list[ScoredHit]`。`ScoredHit` 含 `product_id`、`raw_score`、`retriever_name`、`rank`。必须是 `typing.Protocol` 而非抽象基类——实现方**结构化满足即可，不需要继承**。BM25 与 Dense 实现同一协议，可互换、**可并发调用**（见下方并发约束） |
 | **Embedder**<br>`core/embeddings.py` | `embed_documents(texts, dim) -> np.ndarray`、`embed_query(text, dim) -> np.ndarray`。`dim` 必须是参数而非常量，否则做不了维度消融表。落盘缓存的键为 `(model, dim, text hash)`——**dim 必须在键里**，否则 512/1536 维的跑分会静默复用 768 维向量 |
-| **Fusion**<br>`core/fusion.py` | `fuse(runs: dict[str, list[ScoredHit]], method: Literal["rrf","weighted"], params) -> list[ScoredHit]`。输出必须保留各路原始分数，不能只留融合后的一个数。两路检索取相同的 `top_k`，避免融合被召回深度支配 |
+| **Dense retriever**<br>`core/retrievers/dense.py` | 使用 pgvector 的**余弦距离 `<=>`**，不是 L2 `<->`。`ef_search` 必须可配置（经 `PipelineConfig` 暴露），不得硬编码——它是召回与延迟的调节旋钮，M3 掉分时第一个要试的就是它。查询向量的 `dim` 从 config 读取，绝不假设 |
+| **Fusion**<br>`core/fusion.py` | `fuse(runs: dict[str, list[ScoredHit]], method: Literal["rrf","weighted"], params) -> list[ScoredHit]`。RRF 的 `k` 可配置（默认 60）；weighted 走 min-max 归一化。输出必须保留各路原始分数，不能只留融合后的一个数。**两路检索取相同的 `top_k`**，避免融合被召回深度支配 |
 | **Reranker**<br>`core/rerank.py` | `rerank(query, hits, top_k) -> list[ScoredHit]`。追加 `rerank_score`，保留重排前的名次（用于可解释面板展示"从第 12 名升到第 2 名"） |
-| **Pipeline**<br>`core/pipeline.py` | `search(query: Query, config: PipelineConfig) -> SearchResponse`。`PipelineConfig` 是 Pydantic 模型，含 `use_bm25` / `use_dense` / `fusion_method` / `use_rerank` / `embed_dim` / `top_k` 等开关。**消融实验就是遍历这个 config，不需要改任何代码** |
+| **Pipeline**<br>`core/pipeline.py` | `search(query: Query, config: PipelineConfig) -> SearchResponse`。`PipelineConfig` 是 Pydantic 模型，含 `use_bm25` / `use_dense` / `fusion_method` / `use_rerank` / `embed_dim` / `top_k` / `ef_search` 等开关。**消融实验就是遍历这个 config，不需要改任何代码**。**BM25 与 dense 必须并发执行**（async），不得串行——BM25 单独已耗 ~157 ms，而 22.1 的验收标准是 P95 < 800 ms |
 | **ScoreBreakdown**<br>`core/models.py` | 每个结果附带 `bm25_score`、`dense_score`、`fused_score`、`rerank_score`、`rank_before_rerank`、`matched_terms`。各路分数是**累加而非覆盖**：融合分绝不能抹掉它由之计算而来的原始分。这就是可解释面板的完整数据契约 |
 | **CorpusAdapter**<br>`adapters/base.py` | `iter_documents() -> Iterator[Product]`、`load_qrels() -> Qrels`。同样是 `typing.Protocol`。P2 与未来的语料接入必须实现同一协议——这是"同一内核多语料域"叙事的技术基础 |
-| **Eval runner**<br>`evals/runner.py` | `run(config: PipelineConfig, split: str, dataset_version: str) -> EvalResult`。结果写入 `evals/results/` 与 `eval_runs` 表，含配置快照、数据集版本、指标、耗时、成本。**读 test 切分必须显式传 `allow_test=True`，否则抛异常** |
+| **Eval runner**<br>`evals/runner.py` | `run(config: PipelineConfig, split: str, dataset_version: str, allow_test: bool = False) -> EvalResult`。结果写入 `evals/results/` 与 `eval_runs` 表，含配置快照、数据集版本、指标、跳过条数、p50/p95 耗时、成本。**读 test 切分必须显式传 `allow_test=True`，否则抛异常** |
+
+### 22.4.1 各模块归属的里程碑
+
+M3 拆成两个可独立下发的任务，因为**嵌入是不可压缩的机器时间**（约 30–60 分钟），必须与写代码并行。前者产出脚本后立刻挂起全量嵌入，后者在嵌入跑着的同时进行。
+
+| 里程碑 | 模块 | 说明 |
+| --- | --- | --- |
+| M0a | `core/models.py`、`retrievers/base.py`、`adapters/base.py`、`providers/` | 在 `retrieval-core` 仓库，只有契约与协议 |
+| M0b | `app/`、Dockerfile、CI、部署 | 在 `shoprank` 仓库 |
+| M2 | `evals/metrics.py`、`retrievers/bm25.py`、`evals/runner.py`、`evals/ablation.py` | 评测先行，先有尺子再有功能 |
+| **M3a** | `core/embeddings.py`、`scripts/build_index.py` | **只产出脚本**。验收通过即挂起全量嵌入，然后才下发 M3b |
+| **M3b** | `core/retrievers/dense.py`、`core/fusion.py`、`core/pipeline.py` | 与嵌入并行开发。**不得修改 M3a 的两个文件**——索引正在跑 |
+| M4 | `core/rerank.py`、难负例挖掘 | |
+| M5 | `scripts/translate_queries.py`、跨语言通路 | |
+| M6 | `web/`、可解释面板、`GET /api/search` 缓存路径 | |
 
 ## 22.5 数据库与 API 契约
 

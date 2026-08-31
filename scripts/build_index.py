@@ -69,10 +69,10 @@ async def build_index(args, settings):
         
         embeddings = await embed_documents(texts, dim=dim)
         
-        records = [(pid, emb.tolist()) for pid, emb in zip(product_ids, embeddings)]
+        records = [(pid, txt, str(emb.tolist())) for pid, txt, emb in zip(product_ids, texts, embeddings)]
         await conn.executemany("""
-            INSERT INTO products (product_id, embedding)
-            VALUES ($1, $2::vector)
+            INSERT INTO products (product_id, product_text, embedding)
+            VALUES ($1, $2, $3::vector)
             ON CONFLICT (product_id) DO UPDATE SET embedding = EXCLUDED.embedding;
         """, records)
         

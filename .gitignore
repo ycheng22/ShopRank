@@ -63,3 +63,4 @@ Thumbs.db
 .agents/
 skills-lock.json
 
+.cache/

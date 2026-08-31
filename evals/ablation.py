@@ -6,20 +6,47 @@ if sys.platform == 'win32':
 
 import json
 from pathlib import Path
+
 import asyncpg
-from retrieval_core.models import PipelineConfig
+
 from app.settings import get_settings
+from core.pipeline import ShopRankPipelineConfig
 
 CONFIGS = [
     (
         "BM25 Baseline", 
-        PipelineConfig(
+        ShopRankPipelineConfig(
             use_bm25=True,
             use_dense=False,
             use_rerank=False,
             top_k=100,
+            fusion_method="none",
+            embed_dim=768,
+            ef_search=40
+        )
+    ),
+    (
+        "+dense",
+        ShopRankPipelineConfig(
+            use_bm25=True,
+            use_dense=True,
+            use_rerank=False,
+            top_k=100,
+            fusion_method="none",
+            embed_dim=768,
+            ef_search=40
+        )
+    ),
+    (
+        "+hybrid",
+        ShopRankPipelineConfig(
+            use_bm25=True,
+            use_dense=True,
+            use_rerank=False,
+            top_k=100,
             fusion_method="rrf",
-            embed_dim=768
+            embed_dim=768,
+            ef_search=40
         )
     )
 ]
@@ -40,7 +67,7 @@ async def render_ablation_table():
             sql = "SELECT * FROM eval_runs ORDER BY created_at DESC"
             rows = await pool.fetch(sql)
             for r in rows:
-                c = PipelineConfig.model_validate_json(r["config"])
+                c = ShopRankPipelineConfig.model_validate_json(r["config"])
                 if c == config:
                     row = r
                     break
@@ -52,7 +79,7 @@ async def render_ablation_table():
                 latest_mtime = 0
                 for f in results_dir.glob("*.json"):
                     data = json.loads(f.read_text())
-                    c = PipelineConfig.model_validate(data["config"])
+                    c = ShopRankPipelineConfig.model_validate(data["config"])
                     if c == config:
                         mtime = f.stat().st_mtime
                         if mtime > latest_mtime:

@@ -1,0 +1,30 @@
+# Implementation Plan: M3b Checklists Verification
+
+We need to systematically verify and document the engineering checklist items from section 23.8.3 and 23.8.4 of the ShopRank SPEC. Many of these have already been achieved implicitly, but we must generate the hard proof and write the formal documentation into `docs/DECISIONS.md`.
+
+## Open Questions
+None. The checklist is very clear and we have all the data required to fulfill it.
+
+## Proposed Changes
+
+### 1. Create Evaluation Notebook Artifact
+#### [NEW] `evaluation_notebook.md` (Artifact)
+We will create a live markdown artifact specifically for this checklist. It will serve as a single pane of glass showing the real-time status and evidence for each of the 8 items across sections 23.8.3 and 23.8.4.
+
+### 2. Verify 23.8.3 (Index & Capacity)
+- **Cache Validation**: I will create a quick scratch script `verify_cache.py` that nullifies 100 embeddings in the DB, then re-runs `build_index.py --limit 100` to prove it finishes in milliseconds via disk cache (proving the README claim).
+- **Capacity Check**: We already have the log output showing `266 MB`. We will formally record that this comfortably fits the 0.5 GB Neon limit.
+- **EXPLAIN ANALYZE**: I will run a raw SQL query `EXPLAIN ANALYZE SELECT product_id FROM products ORDER BY embedding <=> <vector> LIMIT 10;` using `asyncpg` to prove `hnsw` is triggering an `Index Scan` and not silently falling back to a `Seq Scan`.
+- **Update DECISIONS.md**: 
+  #### [MODIFY] `docs/DECISIONS.md`
+  I will document the 3 engineering numbers: Build Time (2811s), Peak GPU Memory (7283 MiB), and Table Size (266 MB).
+
+### 3. Verify 23.8.4 (Ablation & Breakdown)
+- **Ablation Table**: Already completed in the previous step. The `README.md` generator works and the 3 rows are populated.
+- **ScoreBreakdown Proof**: I will write a scratch script to run `pipeline.search()` for 1 query and print the exact JSON response to visually prove `bm25_score` and `dense_score` survive the fusion process.
+- **Update DECISIONS.md**:
+  #### [MODIFY] `docs/DECISIONS.md`
+  I will add the final conclusions analyzing the +12.7% Recall jump and why +hybrid is superior, completing the technical article hooks.
+
+## Verification Plan
+The execution of this plan *is* the verification. The results of the SQL EXPLAIN, the cache timing, and the JSON output will be embedded directly into the `evaluation_notebook.md` artifact for your review.

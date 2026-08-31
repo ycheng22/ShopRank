@@ -1,0 +1,78 @@
+# Implementation Plan: M3b - Dense Retrieval, Fusion, and Pipeline Assembly
+
+This plan outlines the steps to implement milestone M3b, satisfying the dense retrieval path, concurrent execution, fusion (RRF/weighted), and pipeline assembly, followed by the evaluation on the `dev` split.
+
+## Open Questions
+- To expose `ef_search` via `PipelineConfig` without modifying `retrieval-core` (which is outside the allowed modification paths), I plan to subclass `PipelineConfig` inside `core/pipeline.py` (e.g., `ShopRankPipelineConfig`). Is this approach acceptable, or is there another expected way to inject `ef_search` into the config?
+- For the "+dense" configuration (bm25 + dense, no fusion), I will implement `fusion_method="none"` which simply concatenates the hits from both retrievers and sorts them by their raw scores (which are on completely different scales). This deliberately poor ranking will demonstrate the necessity of the `+hybrid` (RRF) fusion row. Is this the intended behaviour for the "+dense" ablation row?
+
+## Proposed Changes
+
+---
+
+### `core/retrievers/dense.py`
+
+#### [NEW] `dense.py`
+- Create `DenseRetriever` implementing the `Retriever` Protocol.
+- **Initialization**: Takes `database_url`, `embed_dim`, and `ef_search`.
+- **`retrieve`**: 
+  - Embeds the `query.text` using `embed_query` (BGE-M3).
+  - Sets the local `hnsw.ef_search` for the transaction.
+  - Queries `pgvector` using cosine distance (`<=>`).
+  - Returns `ScoredHit`s mapped with `dense` retriever name and raw similarity score (`1 - distance`).
+
+---
+
+### `core/fusion.py`
+
+#### [NEW] `fusion.py`
+- Implement `fuse(runs: dict[str, list[ScoredHit]], method: Literal["rrf","weighted", "none"], params: dict) -> list[ScoredHit]`.
+- **RRF**: Groups hits by `product_id`, sums `1 / (k + rank)` for each, and sets this as the new `raw_score`.
+- **Weighted**: Min-Max normalizes the scores for each run, then applies weights.
+- **None/Union**: Concatenates results, sorts by raw scores (for baseline demonstration).
+- **ScoreBreakdown**: Critically preserves all original `bm25_score` and `dense_score` in the returned hits.
+
+---
+
+### `core/pipeline.py`
+
+#### [NEW] `pipeline.py`
+- Define `ShopRankPipelineConfig` extending `PipelineConfig` to add `ef_search`.
+- Implement `search(query: Query, config: ShopRankPipelineConfig) -> SearchResponse`.
+- Use `asyncio.gather` to concurrently await BM25 and Dense retrievers to meet the 800ms P95 budget.
+- Merge the outputs based on `config.use_bm25` and `config.use_dense`.
+- Pass to `fuse()` if both are used.
+- Return `SearchResponse` ensuring `ScoreBreakdown` is perfectly populated.
+
+---
+
+### `evals/runner.py`
+
+#### [MODIFY] `runner.py`
+- Update the type hint for `config` to `ShopRankPipelineConfig`.
+- Replace the direct `BM25Retriever` call with a call to `pipeline.search()`.
+- Add `allow_test` validation logic.
+- Update DB insertion to match schema.
+
+---
+
+### `evals/ablation.py`
+
+#### [MODIFY] `ablation.py`
+- Update `CONFIGS` to include three configurations:
+  1. `BM25 Baseline` (use_bm25=True, use_dense=False)
+  2. `+dense (No Fusion)` (use_bm25=True, use_dense=True, fusion_method="none")
+  3. `+hybrid (RRF)` (use_bm25=True, use_dense=True, fusion_method="rrf")
+- Ensure `README.md` rewriting logic correctly maps these three rows.
+
+## Verification Plan
+
+### Automated Tests
+- Run `pytest` locally on any tests (if existing, though currently focusing on evals).
+- Run `mypy core/ evals/` to ensure type-checking compliance.
+- Run `ruff check core/ evals/` for linting.
+
+### Manual Verification
+- Execute `uv run python evals/ablation.py` to trigger the ablation loop (if it drives the runner) or run `runner.py` for the configs.
+- Check `evals/results` and `eval_runs` table in Neon to verify that the rows are properly recorded.
+- Review `README.md` to confirm the metrics table populated correctly, specifically looking for the recall@50 improvement.

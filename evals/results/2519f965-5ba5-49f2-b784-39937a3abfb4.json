@@ -1,0 +1,21 @@
+{
+  "run_id": "2519f965-5ba5-49f2-b784-39937a3abfb4",
+  "config": {
+    "use_bm25": true,
+    "use_dense": false,
+    "fusion_method": "none",
+    "use_rerank": false,
+    "embed_dim": 768,
+    "top_k": 100,
+    "ef_search": 40
+  },
+  "dataset_version": "unknown",
+  "split": "dev",
+  "ndcg_10": 0.4167455759526366,
+  "recall_50": 0.5121372809608578,
+  "mrr_10": 0.6566732804232803,
+  "latency_p50_ms": 106.27200012095273,
+  "latency_p95_ms": 211.17957001552008,
+  "cost": 0.0,
+  "skipped_count": 0
+}

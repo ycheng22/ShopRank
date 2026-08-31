@@ -1,0 +1,51 @@
+# M3b - Dense Retrieval & Fusion Implementation Walkthrough
+
+The dense retrieval path, fusion logic, and pipeline assembly have been successfully implemented. 
+
+## 1. Implemented Components
+
+### `core/retrievers/dense.py`
+- Added the `DenseRetriever` implementing the `Retriever` protocol structurally.
+- Uses `pgvector`'s cosine distance operator (`<=>`).
+- Safely configures `hnsw.ef_search` per transaction block before executing queries.
+
+### `core/fusion.py`
+- Implemented `fuse` with three strategies:
+  1. **`none` (Union Baseline)**: Simply concatenates results and sorts by raw score to act as a negative baseline for evaluation.
+  2. **`rrf` (Reciprocal Rank Fusion)**: Configurable `k`, combines rank stability from both streams.
+  3. **`weighted`**: Uses min-max normalization on scores before aggregating.
+- Preserves the `ScoreBreakdown` (both `bm25_score` and `dense_score`) into every returned `ScoredHit` object.
+
+### `core/pipeline.py`
+- Subclassed `PipelineConfig` to `ShopRankPipelineConfig` locally (as `AGENTS.md` forbids modifying `retrieval-core`). This perfectly injects `ef_search`.
+- Built the `search` function to invoke BM25 and Dense **concurrently** via `asyncio.gather`. 
+- Retrieves and fuses responses conditionally based on the passed flags.
+
+## 2. Evaluation Results (Full Index)
+
+With the full indexing run (`task-401`) complete (26,487 vectors and HNSW index built), the evaluation was rerun to capture the true metrics. 
+
+| Configuration | NDCG@10 | Recall@50 | MRR@10 | p95 Latency (ms) |
+| --- | --- | --- | --- | --- |
+| BM25 Baseline | 0.4158 | 0.5090 | 0.6625 | 188.0 |
+| +dense | 0.4975 | 0.6362 | 0.7197 | 272.0 |
+| +hybrid | 0.5180 | 0.6333 | 0.7538 | 279.6 |
+
+### Metrics Delta Analysis (vs BM25 Baseline)
+
+- **`+dense` (No Fusion)**
+  - **Recall@50**: +0.1272
+  - **NDCG@10**: +0.0817
+  - **MRR@10**: +0.0572
+  - **p95 Latency**: +84.0 ms 
+  - *Analysis*: With the full index, Dense retrieval strictly dominates BM25 across all accuracy metrics. It pushed candidate recall up by an absolute 12.7%, bringing over 63% of relevant products into the top-50 pool.
+
+- **`+hybrid` (RRF)**
+  - **Recall@50**: +0.1243
+  - **NDCG@10**: +0.1022
+  - **MRR@10**: +0.0913
+  - **p95 Latency**: +91.6 ms
+  - *Analysis*: RRF successfully capitalizes on both candidate pools. While Recall@50 stays effectively the same as dense (since dense already retrieved the majority of relevant candidates), the hybrid fusion dramatically improves ranking quality at the top (NDCG@10 hits 0.5180 and MRR@10 jumps to 0.7538). The p95 latency is extremely healthy at **279.6 ms**, comfortably below the 800 ms budget thanks to concurrent asyncio execution.
+
+> [!NOTE]
+> All criteria required in the M3b prompt are now passing locally. The metrics table in `README.md` has been successfully updated with the full index results.

@@ -17,7 +17,9 @@
 <!-- ABLATION_START -->
 | Configuration | NDCG@10 | Recall@50 | MRR@10 | p95 Latency (ms) |
 | --- | --- | --- | --- | --- |
-| BM25 Baseline | 0.4188 | 0.5079 | 0.6609 | 210.7 |
+| BM25 Baseline | 0.4158 | 0.5090 | 0.6625 | 188.0 |
+| +dense | 0.4975 | 0.6362 | 0.7197 | 272.0 |
+| +hybrid | 0.5180 | 0.6333 | 0.7538 | 279.6 |
 <!-- ABLATION_END -->
 
 ## Metrics & Conventions

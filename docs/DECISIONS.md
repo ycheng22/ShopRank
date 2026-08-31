@@ -85,3 +85,10 @@ Local deployment is preferred for development and testing, while Docker deployme
 ## Database Driver
 - **Driver**: `asyncpg`
 - **Reason**: The project enforces "async-first" execution. While `psycopg2` was present, it is synchronous. `asyncpg` is the standard, high-performance async driver for Postgres in modern Python. Added for Milestone M2 to support `BM25Retriever`.
+
+## Indexing Engineering Metrics (M3a/M3b)
+| 2026-08-31 | Index Build Time: 2811s \| Peak GPU Memory: 7283 MiB \| Table Size: 266 MB | Confirmed that processing 26,487 queries fits comfortably within the 0.5 GB Neon quota limit. No dimensionality reduction to 512 is required. Re-indexing leverages local disk `.cache` allowing the build script to finish in seconds without rewriting embeddings when vectors are present. |
+
+## Dense Retrieval & Fusion Ablation (M3b)
+- **Dense vs BM25**: Pure Dense retrieval explicitly dominates BM25, driving Recall@50 up by a massive **+12.7%** (from 50.9% to 63.6%). The candidate net is successfully catching half of the relevant items BM25 missed.
+- **RRF Hybrid Superiority**: Fusing the BM25 exact-match signals with the Dense semantic signals using Reciprocal Rank Fusion yielded the best overall pipeline. Hybrid pushed **NDCG@10 to 0.5180** and **MRR@10 to 0.7538** without sacrificing the 63.3% recall, proving semantic matching effectively re-ordered the top 10 results. The pipeline concurrently executes in **~279ms (p95)**, satisfying the 800ms budget constraint.

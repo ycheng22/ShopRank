@@ -1,23 +1,21 @@
-import os
-import json
 import time
 import uuid
-import asyncio
-import asyncpg
-import numpy as np
-from datetime import datetime
 from collections import defaultdict
 from pathlib import Path
 
+import asyncpg
+import numpy as np
 from pydantic import BaseModel
-from retrieval_core.models import PipelineConfig, Query
-from core.retrievers.bm25 import BM25Retriever
-from evals.metrics import ndcg_at_k, recall_at_k, mrr_at_k
+from retrieval_core.models import Query
+
 from app.settings import get_settings
+from core.pipeline import ShopRankPipelineConfig, close_pipeline, search
+from evals.metrics import mrr_at_k, ndcg_at_k, recall_at_k
+
 
 class EvalResult(BaseModel):
     run_id: str
-    config: PipelineConfig
+    config: ShopRankPipelineConfig
     dataset_version: str
     split: str
     ndcg_10: float
@@ -28,7 +26,7 @@ class EvalResult(BaseModel):
     cost: float
     skipped_count: int
 
-async def load_split_queries(pool: asyncpg.Pool, split: str, limit: int = None) -> list[tuple[str, Query]]:
+async def load_split_queries(pool: asyncpg.Pool, split: str, limit: int | None = None) -> list[tuple[str, Query]]:
     sql = "SELECT query_id, text, locale FROM queries WHERE split = $1 ORDER BY query_id"
     if limit:
         sql += f" LIMIT {limit}"
@@ -60,7 +58,7 @@ async def init_gatemark_db(pool: asyncpg.Pool):
         );
     """)
 
-async def run(config: PipelineConfig, split: str = "dev", dataset_version: str = "unknown", allow_test: bool = False, limit: int = None) -> EvalResult:
+async def run(config: ShopRankPipelineConfig, split: str = "dev", dataset_version: str = "unknown", allow_test: bool = False, limit: int | None = None) -> EvalResult:
     if split == "test" and not allow_test:
         raise ValueError("Reading the 'test' split requires allow_test=True")
         
@@ -80,9 +78,8 @@ async def run(config: PipelineConfig, split: str = "dev", dataset_version: str =
         print(f"Loaded {len(queries)} queries. Loading qrels...")
         qrels_all = await load_qrels(shoprank_pool)
         
-        print("Initializing retriever...")
-        bm25_retriever = BM25Retriever(settings.database_url)
-        await bm25_retriever._get_pool()
+        print("Initializing pipeline...")
+        # pipeline initialization happens lazily in search()
         
         print("Running evaluation loop...")
         
@@ -96,10 +93,8 @@ async def run(config: PipelineConfig, split: str = "dev", dataset_version: str =
         for q_id, q in queries:
             start_t = time.perf_counter()
             
-            if config.use_bm25 and not config.use_dense:
-                hits = await bm25_retriever.retrieve(q, top_k=config.top_k)
-            else:
-                hits = []
+            response = await search(q, config)
+            hits = response.hits
                 
             elapsed_ms = (time.perf_counter() - start_t) * 1000.0
             latencies.append(elapsed_ms)
@@ -119,7 +114,7 @@ async def run(config: PipelineConfig, split: str = "dev", dataset_version: str =
             recall_scores.append(recall)
             mrr_scores.append(mrr)
             
-        await bm25_retriever.close()
+        await close_pipeline()
             
         avg_ndcg = float(np.mean(ndcg_scores)) if ndcg_scores else 0.0
         avg_recall = float(np.mean(recall_scores)) if recall_scores else 0.0

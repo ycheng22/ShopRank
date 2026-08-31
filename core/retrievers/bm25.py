@@ -1,6 +1,7 @@
 import asyncpg
 from retrieval_core.models import Query, ScoredHit
 
+
 class BM25Retriever:
     def __init__(self, database_url: str):
         self.database_url = database_url
