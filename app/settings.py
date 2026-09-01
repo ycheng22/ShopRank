@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     git_sha: str = "dev"
     hf_token: str = ""
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    qwen_api_key: str = ""
+    qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     model_config = SettingsConfigDict(
         env_file=".env", 

@@ -1,0 +1,307 @@
+# M4 + M5: Reranking, Hard Negatives, Weighted Fusion & Cross-Lingual Retrieval
+
+Implement milestones M4 and M5 together. M4 adds cross-encoder reranking, weighted fusion, and hard-negative mining. M5 adds query translation (zh/fr) and cross-lingual retrieval evaluation. Their only overlap is `PipelineConfig` fields and eval configs — building them together avoids rework.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Six things you must decide before this plan executes** (the task description is explicit that these are human decisions, not AI decisions). Provide your answers below — I cannot proceed without them.
+
+### 1. Rerank depth measurement
+
+You need to benchmark `bge-reranker-v2-m3` on CPU against Top-50 candidates and add the latency to the existing 279ms p95. If the total exceeds 800ms, try Top-30 or record a decision to limit reranking to the cache path / use ONNX int8.
+
+**I need from you:** The measured rerank depth (e.g., 50 or 30) and the observed CPU latency, or permission to benchmark it as Step 0 of execution.
+
+### 2. Hard-negative thresholds
+
+The task says "I above rank 10, C above rank 5" as the default. Are you happy with these thresholds, or do you want different ones?
+
+### 3. Translation provider
+
+The task specifies DeepSeek or Alibaba Model Studio via the provider abstraction. Which one do you want as primary? I'll implement both as fallback options.
+
+### 4. RRF k diagnostic
+
+The task asks to run k=10/60/200 and explain why hybrid recall@50 (0.6333) < dense recall@50 (0.6362). I'll run this diagnostic and report the explanation — no approval needed, just confirming this is part of the plan.
+
+### 5. FAILURE-NOTES.md
+
+The task says you must personally read 20 P1 failure cases + 10 zh/10 fr bad samples and write `docs/FAILURE-NOTES.md`. I will **not** generate this file — I'll produce the candidate lists for your review, and you write the notes.
+
+### 6. New Settings fields
+
+I need to add `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `QWEN_API_KEY`, and `QWEN_BASE_URL` to `Settings` and `.env.example`. These are already in `.env` but not in Settings. This is required for the provider abstraction to work.
+
+> [!WARNING]
+> **The `.env` file currently contains `GATEMARK_DATABASE_URL` in `.env.example` but it's missing from `.env` itself.** Eval runs will write to local JSON only. This is fine for now but worth noting.
+
+---
+
+## Open Questions
+
+1. **Rerank depth** — Should I run the CPU benchmark as Step 0, or will you provide the number? The default in the prompt is `<YOUR MEASURED DEPTH>`.
+2. **Translation provider preference** — DeepSeek primary + Alibaba failover, or vice versa?
+3. **`retrieval-core` changes** — `ShopRankPipelineConfig` currently extends `PipelineConfig` with only `ef_search`. M4+M5 require adding `rerank_depth`, `rrf_k`, `fusion_weights`, and `locale` fields. I'll add these to `ShopRankPipelineConfig` (not to `retrieval-core`, which must stay generic). Confirm this is correct.
+
+---
+
+## Proposed Changes
+
+### Phase 0 — Pre-flight: Rerank Latency Benchmark
+
+#### [NEW] [`scripts/bench_rerank.py`](file:///d:/Github_Clones/ShopRank/scripts/bench_rerank.py)
+
+Standalone script to measure CPU latency of `bge-reranker-v2-m3` on Top-50 and Top-30 candidate sets. Loads the model once, runs 100 iterations on synthetic (query, passage) pairs matching real data lengths, reports p50/p95/p99 latency. Output goes to stdout; the decision is recorded in `DECISIONS.md`.
+
+---
+
+### Phase 1 — Provider Abstraction for Translation (M5 prerequisite)
+
+#### [NEW] [`providers/deepseek.py`](file:///d:/Github_Clones/ShopRank/providers/deepseek.py)
+
+LLM provider for DeepSeek chat completions (translation use case). Accepts `api_key` and `base_url` as constructor args — no environment reads. Implements a `translate(text, target_lang) -> str` method using the chat API with a translation system prompt.
+
+#### [NEW] [`providers/alibaba.py`](file:///d:/Github_Clones/ShopRank/providers/alibaba.py)
+
+Same interface as DeepSeek, using Alibaba Model Studio (Qwen). Failover provider.
+
+#### [NEW] [`providers/translation.py`](file:///d:/Github_Clones/ShopRank/providers/translation.py)
+
+Translation router that selects the provider based on tier configuration. Exposes `translate_batch(texts, target_lang, provider_name) -> list[str]`. All LLM calls go through this layer — `translate_queries.py` never calls an API directly.
+
+#### [MODIFY] [`app/settings.py`](file:///d:/Github_Clones/ShopRank/app/settings.py)
+
+Add fields: `deepseek_api_key`, `deepseek_base_url`, `qwen_api_key`, `qwen_base_url`.
+
+#### [MODIFY] [`.env.example`](file:///d:/Github_Clones/ShopRank/.env.example)
+
+Add the four new variables.
+
+---
+
+### Phase 2 — Cross-Encoder Reranker (M4)
+
+#### [NEW] [`core/rerankers/__init__.py`](file:///d:/Github_Clones/ShopRank/core/rerankers/__init__.py)
+
+Empty init.
+
+#### [NEW] [`core/rerankers/cross_encoder.py`](file:///d:/Github_Clones/ShopRank/core/rerankers/cross_encoder.py)
+
+- Loads `BAAI/bge-reranker-v2-m3` on CPU at process start (singleton pattern like `BGEProvider`).
+- Model weights saved to `D:\huggingface_cache` per AGENTS.md rule.
+- Logs cold-load time via structured logging.
+- Signature: `rerank(query: Query, hits: list[ScoredHit], top_k: int) -> list[ScoredHit]`
+- For each hit, adds `rerank_score` and `rank_before_rerank` to `ScoreBreakdown`.
+- **Preserves** all existing breakdown fields (`bm25_score`, `dense_score`, `fused_score`).
+- Returns the top_k hits sorted by rerank_score.
+
+**Implementation detail:** The cross-encoder takes `(query, passage)` pairs. We need the product text for each hit. The reranker will accept an additional `product_texts: dict[str, str]` mapping `product_id -> text`, fetched from the DB in the pipeline before calling rerank. This avoids the reranker needing DB access.
+
+---
+
+### Phase 3 — Weighted Fusion & PipelineConfig Extension (M4)
+
+#### [MODIFY] [`core/fusion.py`](file:///d:/Github_Clones/ShopRank/core/fusion.py)
+
+The `weighted` fusion path already exists and works. Changes needed:
+- Accept `rrf_k` from params (already done via `params.get("k", 60)`) — just ensure the pipeline passes it through.
+- No structural changes needed; the existing weighted fusion uses min-max normalization with configurable weights.
+
+#### [MODIFY] [`core/pipeline.py`](file:///d:/Github_Clones/ShopRank/core/pipeline.py)
+
+Major changes:
+1. **`ShopRankPipelineConfig`** gains: `rerank_depth: int = <MEASURED>`, `rrf_k: int = 60`, `fusion_weights: dict[str, float] = {"bm25": 0.5, "dense": 0.5}`, `locale: str = "en"`.
+2. **Reranking integration**: When `use_rerank` is True, after fusion:
+   - Fetch product texts for the top `rerank_depth` hits from DB.
+   - Call `cross_encoder.rerank(query, fused_hits[:rerank_depth], top_k=config.top_k)`.
+   - The result preserves all prior breakdown fields.
+3. **Locale-aware BM25**: Pass `locale` to BM25Retriever, which selects the Postgres `tsconfig` (`'english'` for en, `'simple'` for zh/fr). No Chinese tokenizer dependency.
+4. **Pass-through for fusion params**: Forward `rrf_k` and `fusion_weights` from config to `fuse()`.
+5. **Pipeline must NOT import `get_settings()` at call time** — currently it does on line 28. Refactor: the `db_url` is passed in, not read from settings. This is an existing violation of AGENTS.md §4.
+
+> [!IMPORTANT]
+> `pipeline.py` currently calls `get_settings()` directly. This violates AGENTS.md §4 ("No business logic in route handlers. No I/O in pure functions.") and the rule that `core/` must not read the environment. I will refactor `search()` to accept `db_url: str` as a parameter instead.
+
+---
+
+### Phase 4 — Locale-Aware BM25 (M5)
+
+#### [MODIFY] [`core/retrievers/bm25.py`](file:///d:/Github_Clones/ShopRank/core/retrievers/bm25.py)
+
+- Accept `locale: str` parameter in `retrieve()` or constructor.
+- Map locale to tsconfig: `{"en": "english", "zh": "simple", "fr": "simple"}`.
+- Use the mapped tsconfig in `websearch_to_tsquery()` and `ts_rank()`.
+- `simple` config for zh/fr means no stemming — this is intentional degradation that proves multilingual BM25's weakness. Do **not** add `pg_jieba` or any tokenizer extension.
+
+#### [MODIFY] [`core/retrievers/dense.py`](file:///d:/Github_Clones/ShopRank/core/retrievers/dense.py)
+
+- No changes needed. BGE-M3 is natively multilingual — queries in zh/fr embed correctly without any special handling.
+
+---
+
+### Phase 5 — Translation Script (M5)
+
+#### [NEW] [`scripts/translate_queries.py`](file:///d:/Github_Clones/ShopRank/scripts/translate_queries.py)
+
+- CLI arguments: `--split` (default: dev), `--target-langs` (default: zh,fr), `--provider` (default: deepseek), `--dry-run`.
+- Loads queries from DB for the specified split.
+- For each query × target language, computes cache key: `(provider_model, target_lang, sha256(source_text))`.
+- Checks disk cache at `.cache/translations/`. If cached, skips.
+- Translates via `providers/translation.py`.
+- Sanity checks: drop if empty, identical to source, or wrong script (e.g., Chinese text should contain CJK characters, French should contain Latin characters).
+- Reports: total translated, total cached, total dropped (with per-reason breakdown).
+- Output: `data/queries_multilingual.parquet` with columns: `query_id`, `locale`, `query_text`, `source_query_id`.
+- Reuses the original `query_id` (with locale suffix like `{query_id}_zh`) so existing qrels apply unchanged.
+- Also inserts translated queries into the `queries` table in the DB with the appropriate locale.
+
+> [!WARNING]
+> **Query ID design decision**: The task says "Reuse the original query_id so existing qrels apply unchanged." This means translated query `Q123_zh` maps back to `Q123`'s qrels. The eval runner must strip the locale suffix when looking up qrels. I'll handle this in the runner.
+
+---
+
+### Phase 6 — Hard-Negative Mining Script (M4)
+
+#### [NEW] [`scripts/mine_hard_negatives.py`](file:///d:/Github_Clones/ShopRank/scripts/mine_hard_negatives.py)
+
+- Runs the full pipeline (hybrid+rerank if available) on every dev query.
+- For each result, looks up the ESCI label from qrels.
+- Collects candidates matching: `I` above rank 10, `C` above rank 5 (configurable via CLI).
+- Writes `data/hard_negatives.parquet`: `query_id`, `product_id`, `label`, `rank`, `score_breakdown` (JSON string of the full breakdown).
+- Prints summary: counts per label, mean rank per label, and the worst 20 cases with query text and product title.
+- These worst cases feed `docs/FAILURE-NOTES.md` (which you write manually).
+
+---
+
+### Phase 7 — Evaluation & Ablation Table (M4 + M5)
+
+#### [MODIFY] [`evals/ablation.py`](file:///d:/Github_Clones/ShopRank/evals/ablation.py)
+
+1. **Extend CONFIGS** to 5 rows:
+   - `BM25 Baseline` (existing)
+   - `+dense` (existing)
+   - `+hybrid` (existing, RRF)
+   - `+rerank` (hybrid + cross-encoder reranking)
+   - `+weighted` (weighted fusion instead of RRF, + reranking)
+2. **Add cross-tab renderer**: New function `render_cross_tab()` that generates a 3×4 table: locales (en, zh, fr) × configs (bm25, dense, hybrid, hybrid+rerank) showing NDCG@10.
+3. **RRF k diagnostic**: Add a one-off diagnostic function that runs k=10/60/200 and reports the recall@50 for each, plus a run with asymmetric top_k.
+
+#### [MODIFY] [`evals/runner.py`](file:///d:/Github_Clones/ShopRank/evals/runner.py)
+
+1. **Locale support**: `load_split_queries()` gains an optional `locale` filter.
+2. **Qrel mapping for translated queries**: When running on non-en locale, strip the locale suffix from query_id to look up qrels.
+3. **Config label in EvalResult**: Add a `config_label` field so the cross-tab can identify rows without re-matching configs.
+
+#### [NEW] [`evals/results/bad_cases_zh.md`](file:///d:/Github_Clones/ShopRank/evals/results/bad_cases_zh.md)
+#### [NEW] [`evals/results/bad_cases_fr.md`](file:///d:/Github_Clones/ShopRank/evals/results/bad_cases_fr.md)
+
+Generated by a new `dump_bad_cases()` function: for each non-English locale, the 20 worst-scoring queries with query text, top-5 returned product titles, and their labels.
+
+---
+
+### Phase 8 — Settings & Documentation
+
+#### [MODIFY] [`app/settings.py`](file:///d:/Github_Clones/ShopRank/app/settings.py)
+
+Add: `deepseek_api_key`, `deepseek_base_url` (default `https://api.deepseek.com`), `qwen_api_key`, `qwen_base_url` (default `https://dashscope.aliyuncs.com/compatible-mode`).
+
+#### [MODIFY] [`.env.example`](file:///d:/Github_Clones/ShopRank/.env.example)
+
+Add the four new variables.
+
+#### [MODIFY] [`docs/DECISIONS.md`](file:///d:/Github_Clones/ShopRank/docs/DECISIONS.md)
+
+Add entries for:
+- Rerank depth & measured latency
+- RRF k diagnostic results & explanation of recall anomaly
+- Translation drop count
+- Hard-negative thresholds
+
+#### [MODIFY] [`README.md`](file:///d:/Github_Clones/ShopRank/README.md)
+
+Ablation table extended to 5 rows (auto-generated by `ablation.py`). Cross-lingual table added after ablation section.
+
+---
+
+### Phase 9 — Tests
+
+#### [NEW] [`tests/test_fusion.py`](file:///d:/Github_Clones/ShopRank/tests/test_fusion.py)
+
+- Test RRF fusion produces expected ranking for hand-crafted inputs.
+- Test weighted fusion with known weights and scores.
+- Test that all breakdown fields survive fusion.
+
+#### [NEW] [`tests/test_reranker.py`](file:///d:/Github_Clones/ShopRank/tests/test_reranker.py)
+
+- Test that `rerank_score` and `rank_before_rerank` are set.
+- Test that `bm25_score`, `dense_score`, `fused_score` are preserved.
+- Test that disabling rerank produces identical results.
+
+#### [NEW] [`tests/test_translation.py`](file:///d:/Github_Clones/ShopRank/tests/test_translation.py)
+
+- Test sanity check logic (empty, identical, wrong script).
+- Test cache key generation.
+- Test disk cache hit/miss behavior.
+
+---
+
+## Execution Order
+
+```mermaid
+graph TD
+    A["Phase 0: Bench reranker CPU latency"] --> B["Phase 1: Translation providers"]
+    B --> C["Phase 2: Cross-encoder reranker"]
+    C --> D["Phase 3: Pipeline + PipelineConfig"]
+    D --> E["Phase 4: Locale-aware BM25"]
+    E --> F["Phase 5: translate_queries.py"]
+    F --> G["Phase 6: mine_hard_negatives.py"]
+    G --> H["Phase 7: Eval runs + ablation tables"]
+    H --> I["Phase 8: Settings, .env.example, DECISIONS.md"]
+    I --> J["Phase 9: Tests"]
+    J --> K["Verify: ruff + mypy + pytest"]
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Lint & type check
+uv run ruff check .
+uv run mypy core/ evals/ providers/
+
+# Unit tests
+uv run pytest tests/ -v
+
+# Acceptance criterion 3: disabling rerank reproduces +hybrid exactly
+# (Verified by running the eval with use_rerank=False and comparing to stored result)
+```
+
+### Manual Verification
+1. **Acceptance criterion 1**: `ruff`, `mypy`, `pytest` pass.
+2. **Acceptance criterion 2**: Inspect a ScoreBreakdown from a reranked result and verify all 5 fields are present.
+3. **Acceptance criterion 3**: Run eval with `use_rerank=False` and confirm NDCG@10=0.5180, recall@50=0.6333, MRR@10=0.7538.
+4. **Acceptance criterion 4**: Run `translate_queries.py` twice; second run should make zero provider calls.
+5. **Acceptance criterion 5**: p95 with reranking is a real measurement from `runner.py`.
+6. **Acceptance criterion 6**: `pyproject.toml` diff shows no new runtime dependencies. `sentence-transformers` (already present for BGE-M3 embeddings) includes the cross-encoder; `httpx` (already in dev deps) is used for DeepSeek/Alibaba API calls. The reranker model `bge-reranker-v2-m3` is loaded via `sentence-transformers` CrossEncoder — no new package needed.
+
+### Exit Criteria (Day 1)
+- [ ] Five-row ablation table complete with explainable deltas
+- [ ] 3 locale × 4 config cross-tab (12 cells) complete
+- [ ] `FAILURE-NOTES.md` ≥ 40 entries (human-written)
+- [ ] `DECISIONS.md` updated with rerank depth, latency, RRF k, translation drop count
+
+---
+
+## AGENTS.md Compliance Notes
+
+| Rule | Status |
+|------|--------|
+| No env reads outside `app/settings.py` | ✅ Will **fix** existing violation in `pipeline.py` (line 28 calls `get_settings()`) |
+| No paid reranking API | ✅ Local CPU cross-encoder only |
+| No new runtime dependency | ✅ `sentence-transformers` already installed; `httpx` already in dev deps |
+| Provider abstraction for all LLM calls | ✅ Translation goes through `providers/` |
+| Model weights to D: drive | ✅ `cache_folder="D:/huggingface_cache/hub"` |
+| `Retriever` is `typing.Protocol` | ✅ Not changing retriever protocol |
+| No environment reads in `core/` | ✅ Will remove the existing `get_settings()` call from `pipeline.py` |

@@ -93,3 +93,14 @@ Local deployment is preferred for development and testing, while Docker deployme
 - **Dense vs BM25**: Pure Dense retrieval explicitly dominates BM25, driving Recall@50 up by a massive **+12.7%** (from 50.9% to 63.6%). The candidate net is successfully catching half of the relevant items BM25 missed.
 - **RRF Hybrid Superiority**: Fusing the BM25 exact-match signals with the Dense semantic signals using Reciprocal Rank Fusion yielded the best overall pipeline. Hybrid pushed **NDCG@10 to 0.5180** and **MRR@10 to 0.7538** without sacrificing the 63.3% recall, proving semantic matching effectively re-ordered the top 10 results. The pipeline concurrently executes in **~279ms (p95)**, satisfying the 800ms budget constraint.
 
+## Reranker Latency Budget (M4)
+- **Top-50 CPU Inference Latency**: ~9652 ms (p95)
+- **Top-30 CPU Inference Latency**: ~6057 ms (p95)
+- **Constraint**: Must remain under 800ms total pipeline latency.
+- **Decision**: The cross-encoder inference (`BAAI/bge-reranker-v2-m3` on CPU) vastly exceeds the strict 800ms latency budget even when constrained to a Top-30 depth (which limits the effectiveness of reranking). 
+- **Action Plan**: In production, we will only enable heavy cross-encoder reranking on **cached paths (pre-computed examples)**, or swap to a highly optimized ONNX int8 runtime for free-form queries. For the current deployment topology (which runs on basic Cloud Run CPU instances), free-form search cannot synchronously run this reranker.
+
+## Multi-lingual Evaluation (M5)
+- **Providers**: DeepSeek (`deepseek-chat`) as primary, Alibaba Qwen (`qwen-plus`) as fallback, to minimize translation costs.
+- **Concurrency**: Bounded to 20 concurrent requests using `asyncio.Semaphore(20)` to prevent 429 Too Many Requests errors.
+- **Data Model**: Evaluated `zh` and `fr` translated queries against the same English product catalog, using Dense retrieval which inherently maps multi-lingual queries to English vectors (via BGE-M3's cross-lingual capabilities). BM25 handles lexical fallback where terms match (e.g. brand names).

@@ -1,0 +1,30 @@
+{
+  "run_id": "9ae486ad-b72f-4c91-a8a1-dddf5f5acb1a",
+  "config": {
+    "use_bm25": true,
+    "use_dense": true,
+    "fusion_method": "weighted",
+    "use_rerank": true,
+    "embed_dim": 768,
+    "top_k": 100,
+    "ef_search": 40,
+    "rerank_depth": 30,
+    "rrf_k": 60,
+    "fusion_weights": {
+      "bm25": 0.4,
+      "dense": 0.6
+    },
+    "locale": "en"
+  },
+  "config_label": "+weighted",
+  "dataset_version": "7916cdf6ab75a462e77f20ab40428a10923998d5",
+  "split": "dev",
+  "locale": "en",
+  "ndcg_10": 0.5777040512638265,
+  "recall_50": 0.5617096678878475,
+  "mrr_10": 0.7895965608465608,
+  "latency_p50_ms": 39903.412199928425,
+  "latency_p95_ms": 58651.10060496954,
+  "cost": 0.0,
+  "skipped_count": 0
+}

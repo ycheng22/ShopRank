@@ -1,9 +1,8 @@
-from typing import List
 
 class BGEProvider:
     def __init__(self):
-        from sentence_transformers import SentenceTransformer
         import torch
+        from sentence_transformers import SentenceTransformer
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = SentenceTransformer("BAAI/bge-m3", device=device, cache_folder="D:/huggingface_cache/hub")
 

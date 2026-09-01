@@ -90,12 +90,12 @@ def check_leakage(out_dir):
 
 def ingest_to_neon(out_dir):
     print("\nIngesting into Neon database...")
-    from dotenv import load_dotenv
-    load_dotenv()
-    db_url = os.environ.get("DATABASE_URL")
+    from app.settings import get_settings
+    settings = get_settings()
+    db_url = settings.database_url
     if not db_url:
-        print("DATABASE_URL not found.")
-        return
+        print("DATABASE_URL is not set.")
+        sys.exit(1)
         
     db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
     engine = create_engine(db_url)

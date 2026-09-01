@@ -1,0 +1,34 @@
+# Milestone M4 + M5 Walkthrough: Reranking & Multi-lingual Retrieval
+
+## 1. What Was Done
+- **Latency Benchmarking**: Measured CPU inference of `bge-reranker-v2-m3` across Top-50 (~9.6s) and Top-30 (~6.0s) candidate sets. Recorded architectural constraint in [DECISIONS.md](file:///d:/Github_Clones/ShopRank/docs/DECISIONS.md).
+- **Cross-Encoder Reranker**: Implemented in [core/rerankers/cross_encoder.py](file:///d:/Github_Clones/ShopRank/core/rerankers/cross_encoder.py) with full preservation of existing scoring breakdowns.
+- **Multi-lingual Translation Pipeline**: Implemented DeepSeek/Alibaba Qwen translation providers with exponential backoff and `asyncio.Semaphore(20)` concurrency bounds. Generated and ingested 585 translated dev queries (`zh` and `fr`) into the Neon Postgres database.
+- **Hard Negative Mining**: Mined 292 hard negatives (S: 53, C: 69, I: 170) from dev queries and documented failure cases in [docs/DIAGNOSTICS.md](file:///d:/Github_Clones/ShopRank/docs/DIAGNOSTICS.md).
+- **Configuration & Layering Hygiene**: Cleaned all illegal `os.environ` reads, strictly separated environment ingestion to `app/settings.py`, and aligned `.env.example`.
+- **Comprehensive Evaluation**: Ran full 5-row ablation and 3-locale × 4-config cross-tab evaluations.
+
+## 2. Final Evaluation Numbers
+
+### 5-Row Ablation Table (English, Dev Split)
+| Configuration | NDCG@10 | Recall@50 | MRR@10 | p95 Latency (ms) |
+| --- | --- | --- | --- | --- |
+| **BM25 Baseline** | 0.4174 | 0.5097 | 0.6616 | 172.4 |
+| **+dense** | 0.4937 | **0.6350** | 0.7234 | 275.2 |
+| **+hybrid (RRF)** | 0.5132 | 0.6323 | 0.7463 | 364.0 |
+| **+rerank (CrossEncoder)** | **0.5810** | 0.5706 | **0.7939** | 59,302.2 |
+| **+weighted** | 0.5777 | 0.5617 | 0.7896 | 58,651.1 |
+
+### Cross-Lingual NDCG@10 (3 Locales × 4 Configs)
+| Locale | BM25 | Dense | Hybrid | Hybrid+Rerank |
+| --- | --- | --- | --- | --- |
+| **EN (English)** | 0.4174 | 0.4937 | 0.5132 | **0.5810** |
+| **ZH (Chinese)** | 0.0155 | 0.3013 | 0.2998 | **0.3821** |
+| **FR (French)** | 0.0975 | 0.3585 | 0.2710 | **0.3982** |
+
+## 3. Key Findings & Interview Defense
+1. **Dense & Rerank Dominate Multi-lingual Search**: Lexical BM25 fails completely on non-English queries (ZH: 0.0155) against the English catalog because of vocabulary mismatch. Dense retrieval (BGE-M3) natively bridges cross-lingual semantics to reach 0.3013, and cross-encoder reranking further boosts it to **0.3821**.
+2. **Production Topology Alignment**: Because CPU cross-encoder inference takes ~59s p95, synchronous free-form production queries must route through Hybrid retrieval (~364ms, within the 800ms budget), whereas heavy cross-encoder reranking is reserved for CDN-cached pre-computed examples or GPU/ONNX deployment targets.
+
+## 4. Test Verification
+All 34 automated unit tests pass 100% green (`pytest tests/`).
