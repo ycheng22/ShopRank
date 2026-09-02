@@ -29,6 +29,7 @@ interface SearchResponse {
   message?: string;
   examples_url?: string;
   is_preset_error?: boolean;
+  degraded_to_bm25?: boolean;
 }
 
 interface DemoQuery {
@@ -61,6 +62,7 @@ export class AppComponent implements OnInit {
   quotaExhausted = false;
   demoModeMessage = '';
   presetError = '';
+  degradedMessage = '';
   
   expandedRow: number | null = null;
   
@@ -85,6 +87,7 @@ export class AppComponent implements OnInit {
     this.quotaExhausted = false;
     this.demoModeMessage = '';
     this.presetError = '';
+    this.degradedMessage = '';
     this.expandedRow = null;
     
     const params = {
@@ -121,6 +124,7 @@ export class AppComponent implements OnInit {
     this.quotaExhausted = false;
     this.demoModeMessage = '';
     this.presetError = '';
+    this.degradedMessage = '';
     this.expandedRow = null;
     
     const body = {
@@ -151,6 +155,11 @@ export class AppComponent implements OnInit {
            this.totalFound = res.total_found || 0;
            this.quotaExhausted = res.quota_exhausted || false;
            if (this.quotaExhausted) {
+              this.useRerank = false;
+           }
+           if (res.degraded_to_bm25) {
+              this.degradedMessage = 'Live free-form search ran on BM25 due to hardware limits (missing model weights). Dense + Cross-Encoder reranking can still be explored via the pre-computed demo presets above.';
+              this.useDense = false;
               this.useRerank = false;
            }
         }

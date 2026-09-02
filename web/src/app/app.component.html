@@ -17,6 +17,10 @@
     <p><strong>Quota Exhausted:</strong> Free-form API limit reached for today. Reranking has been disabled and results are degraded.</p>
   </div>
 
+  <div class="demo-banner warning" *ngIf="degradedMessage">
+    <p><strong>Hardware Limitation:</strong> {{ degradedMessage }}</p>
+  </div>
+
   <section class="search-panel">
     <div class="search-box">
       <input type="text" [(ngModel)]="searchQuery" placeholder="Search products..." (keyup.enter)="onSearch()" />

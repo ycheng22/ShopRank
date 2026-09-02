@@ -185,11 +185,23 @@ async def search_freeform(
     if not quota_ok:
         req.config.use_rerank = False
 
-    res = await search(Query(text=req.query), req.config, db_url=settings.database_url)
+    try:
+        res = await search(Query(text=req.query), req.config, db_url=settings.database_url)
+        degraded_to_bm25 = False
+    except Exception as e:
+        if isinstance(e, asyncpg.PostgresError) or isinstance(e, HTTPException):
+            raise
+        logger.warning(f"Inference failed (missing torch/model), degrading to BM25: {e}")
+        req.config.use_dense = False
+        req.config.use_rerank = False
+        res = await search(Query(text=req.query), req.config, db_url=settings.database_url)
+        degraded_to_bm25 = True
 
     out: dict[str, Any] = res.model_dump()
     if not quota_ok:
         out["quota_exhausted"] = True
+    if degraded_to_bm25:
+        out["degraded_to_bm25"] = True
 
     hits = out.get("hits", [])
     if hits:
