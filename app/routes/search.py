@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import asyncpg
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
@@ -87,7 +87,7 @@ class SearchRequest(BaseModel):
 
 
 def get_config_hash(config: ShopRankPipelineConfig) -> str:
-    d = {
+    d: dict[str, Any] = {
         "use_dense": config.use_dense,
         "use_rerank": config.use_rerank,
         "fusion_method": config.fusion_method,
@@ -103,12 +103,12 @@ def get_config_hash(config: ShopRankPipelineConfig) -> str:
 async def search_preset(
     q: str,
     response: Response,
+    settings: Annotated[Settings, Depends(get_settings)],
     locale: str = "en",
     use_dense: bool = True,
     use_rerank: bool = False,
-    fusion_method: str = "rrf",
-    settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
-) -> dict:
+    fusion_method: Literal["rrf", "weighted", "none"] = "rrf",
+) -> dict[str, Any]:
     """GET endpoint for preset queries. Served from cache."""
     response.headers["Cache-Control"] = "public, max-age=300, s-maxage=86400"
 
@@ -134,7 +134,7 @@ async def search_preset(
                 chash,
             )
             if row:
-                data = json.loads(row["response_json"])
+                data: dict[str, Any] = json.loads(row["response_json"])
                 hits = data.get("hits", [])
                 if hits and not hits[0].get("title"):
                     await _enrich_hits_with_product_info(conn, hits)
@@ -172,9 +172,9 @@ async def search_preset(
 async def search_freeform(
     request: Request,
     req: SearchRequest,
+    settings: Annotated[Settings, Depends(get_settings)],
     x_api_key: Annotated[str | None, Header()] = None,
-    settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
-) -> dict:
+) -> dict[str, Any]:
     """POST endpoint for free-form queries. Rate limited to 5/minute per IP."""
 
     cost = len(req.query) + 100
@@ -187,7 +187,7 @@ async def search_freeform(
 
     res = await search(Query(text=req.query), req.config, db_url=settings.database_url)
 
-    out = res.model_dump()
+    out: dict[str, Any] = res.model_dump()
     if not quota_ok:
         out["quota_exhausted"] = True
 

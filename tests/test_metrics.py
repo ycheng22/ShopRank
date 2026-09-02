@@ -3,7 +3,7 @@ import pytest
 from evals.metrics import mrr_at_k, ndcg_at_k, recall_at_k
 
 
-def test_ndcg():
+def test_ndcg() -> None:
     # gains [3,0,2,1,0] -> NDCG@5 == 0.9304 (4 dp).
     qrels = {
         "doc1": "Exact",
@@ -18,7 +18,7 @@ def test_ndcg():
     assert pytest.approx(score, abs=0.0001) == 0.9304
 
 
-def test_ndcg_reversed():
+def test_ndcg_reversed() -> None:
     # The fully reversed ranking [0,1,2,0,3] scores strictly lower than case 1
     qrels = {
         "doc1": "Exact",
@@ -34,7 +34,7 @@ def test_ndcg_reversed():
     assert score_rev < score_fwd
 
 
-def test_mrr():
+def test_mrr() -> None:
     # first relevant hit at rank 1 -> MRR == 1.0
     qrels_1 = {"doc1": "Substitute"}
     results_1 = ["doc1", "doc2", "doc3"]
@@ -50,7 +50,7 @@ def test_mrr():
     assert pytest.approx(score_3, abs=0.0001) == 1.0 / 3.0
 
 
-def test_recall():
+def test_recall() -> None:
     # 3 of 4 relevant products retrieved -> recall == 0.75
     qrels = {
         "doc1": "Exact",
@@ -64,9 +64,9 @@ def test_recall():
     assert score == 0.75
 
 
-def test_empty_qrels_skipped():
+def test_empty_qrels_skipped() -> None:
     # a query with empty qrels is skipped, and the reported skipped count is 1.
-    qrels = {}
+    qrels: dict[str, str] = {}
     results = ["doc1"]
     for metric in [ndcg_at_k, mrr_at_k, recall_at_k]:
         score, skipped = metric(qrels, results, k=5)
@@ -74,7 +74,7 @@ def test_empty_qrels_skipped():
         assert score == 0.0
 
 
-def test_out_of_bounds_k():
+def test_out_of_bounds_k() -> None:
     # recall@50 on a 5-item result list does not raise
     qrels = {"doc1": "Exact"}
     results = ["doc1", "doc2", "doc3", "doc4", "doc5"]

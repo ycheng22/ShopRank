@@ -1,5 +1,5 @@
 class BGEProvider:
-    def __init__(self):
+    def __init__(self) -> None:
         import torch
         from sentence_transformers import SentenceTransformer
 

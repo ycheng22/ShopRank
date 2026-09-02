@@ -1,5 +1,7 @@
 """Tests for fusion logic — RRF, weighted, and score preservation."""
 
+from typing import Any
+
 import pytest
 from retrieval_core.models import ScoreBreakdown, ScoredHit
 
@@ -11,7 +13,7 @@ def _make_hit(
     raw_score: float,
     retriever_name: str,
     rank: int,
-    **breakdown_kwargs: float,
+    **breakdown_kwargs: Any,
 ) -> ScoredHit:
     breakdown = ScoreBreakdown(**breakdown_kwargs)
     return ScoredHit(

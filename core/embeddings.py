@@ -1,5 +1,6 @@
 import hashlib
 import os
+from typing import Any, cast
 
 import numpy as np
 
@@ -13,14 +14,14 @@ def _truncate_and_normalize(vector: list[float], dim: int) -> list[float]:
     norm = np.linalg.norm(vec)
     if norm > 0:
         vec = vec / norm
-    return vec.tolist()
+    return [float(x) for x in vec.tolist()]
 
 
 # Lazy loaded provider to avoid loading model if not needed
-_provider = None
+_provider: BGEProvider | None = None
 
 
-def get_provider():
+def get_provider() -> BGEProvider:
     global _provider
     if _provider is None:
         _provider = BGEProvider()
@@ -34,13 +35,13 @@ def get_cache_key(text: str, dim: int) -> str:
 
 async def embed_documents(
     texts: list[str], dim: int = 768, cache_dir: str = ".cache/embeddings"
-) -> np.ndarray:
+) -> np.ndarray[Any, Any]:
     os.makedirs(cache_dir, exist_ok=True)
     provider = get_provider()
 
-    results = []
-    texts_to_embed = []
-    indices_to_embed = []
+    results: list[Any] = []
+    texts_to_embed: list[str] = []
+    indices_to_embed: list[int] = []
 
     for i, text in enumerate(texts):
         cache_path = os.path.join(cache_dir, f"{get_cache_key(text, dim)}.npy")
@@ -67,6 +68,6 @@ async def embed_documents(
 
 async def embed_query(
     text: str, dim: int = 768, cache_dir: str = ".cache/embeddings"
-) -> np.ndarray:
+) -> np.ndarray[Any, Any]:
     docs = await embed_documents([text], dim=dim, cache_dir=cache_dir)
-    return docs[0]
+    return cast(np.ndarray[Any, Any], docs[0])

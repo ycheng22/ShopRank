@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -7,10 +8,10 @@ router = APIRouter()
 
 
 @router.get("/ablation")
-async def get_ablation_data() -> dict:
+async def get_ablation_data() -> dict[str, Any]:
     """Returns the raw eval run JSONs for the UI to render ablation and cross-tabs."""
     results_dir = Path("evals/results")
-    data = []
+    data: list[Any] = []
     if results_dir.exists():
         for f in results_dir.glob("*.json"):
             try:

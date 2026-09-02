@@ -5,13 +5,15 @@ from core.embeddings import embed_query
 
 
 class DenseRetriever:
-    def __init__(self, database_url: str, embed_dim: int, ef_search: int = 40):
+    def __init__(
+        self, database_url: str, embed_dim: int, ef_search: int = 40
+    ) -> None:
         self.database_url = database_url
         self.embed_dim = embed_dim
         self.ef_search = ef_search
-        self._pool = None
+        self._pool: asyncpg.Pool | None = None
 
-    async def _get_pool(self):
+    async def _get_pool(self) -> asyncpg.Pool:
         if self._pool is None:
             self._pool = await asyncpg.create_pool(self.database_url)
         return self._pool
@@ -53,7 +55,7 @@ class DenseRetriever:
                 )
             return results
 
-    async def close(self):
+    async def close(self) -> None:
         if self._pool is not None:
             await self._pool.close()
             self._pool = None

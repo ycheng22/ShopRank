@@ -8,6 +8,7 @@ are passed in explicitly.
 from __future__ import annotations
 
 import asyncio
+from typing import Any, Literal
 
 import asyncpg
 from pydantic import Field as PydanticField
@@ -26,6 +27,7 @@ class ShopRankPipelineConfig(PipelineConfig):
     ef_search: int = 40
     rerank_depth: int = 50
     rrf_k: int = 60
+    fusion_method: Literal["rrf", "weighted", "none"] = "rrf"
     fusion_weights: dict[str, float] = PydanticField(
         default_factory=lambda: {"bm25": 0.5, "dense": 0.5}
     )
@@ -100,7 +102,7 @@ async def search(
 
     # Fusion / pass-through
     if config.use_bm25 and config.use_dense:
-        fusion_params: dict[str, object] = {}
+        fusion_params: dict[str, Any] = {}
         if config.fusion_method == "rrf":
             fusion_params["k"] = config.rrf_k
         elif config.fusion_method == "weighted":
