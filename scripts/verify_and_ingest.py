@@ -19,7 +19,7 @@ def run_sample_dataset(out_dir):
         "--out-dir",
         out_dir,
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         print(f"Failed to run script. Output:\n{result.stdout}\n{result.stderr}")
         sys.exit(1)
@@ -174,7 +174,7 @@ def ingest_to_neon(out_dir):
             method="multi",
             chunksize=1000,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Ingest failed: {e}")
         return
 

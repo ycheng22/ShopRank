@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import asyncpg
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel
 from retrieval_core.models import Query
 
@@ -15,6 +15,8 @@ from core.pipeline import ShopRankPipelineConfig, search
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+from app.limiter import limiter
 
 # Simple in-memory token quota tracking
 _daily_tokens = 0
@@ -166,18 +168,14 @@ async def search_preset(
 
 
 @router.post("/search")
+@limiter.limit("5/minute")
 async def search_freeform(
+    request: Request,
     req: SearchRequest,
     x_api_key: Annotated[str | None, Header()] = None,
     settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
 ) -> dict:
-    """POST endpoint for free-form queries. Requires API key."""
-    if not x_api_key or x_api_key.strip() == "":
-        return {
-            "error": "demo_mode",
-            "message": "Free-form search requires an API key. Try one of the preset examples.",
-            "examples_url": "/api/examples",
-        }
+    """POST endpoint for free-form queries. Rate limited to 5/minute per IP."""
 
     cost = len(req.query) + 100
     if req.config.use_rerank:

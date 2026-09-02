@@ -12,6 +12,7 @@ dependencies = [
     "pyarrow>=25.0.1",
     "jupyter>=1.1.1",
     "asyncpg>=0.29.0",
+    "slowapi>=0.1.10",
 ]
 
 [project.optional-dependencies]

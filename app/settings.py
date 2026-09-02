@@ -10,6 +10,7 @@ class Settings(BaseSettings):
         "http://localhost:4200",
         "https://shoprank.vectorlab.me",
     ]
+    environment: str = "local"
     log_level: str = "INFO"
     git_sha: str = "dev"
     hf_token: str = ""

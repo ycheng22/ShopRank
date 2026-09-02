@@ -69,8 +69,8 @@ The eval library is **GateMark**. GitHub repo `ycheng22/gatemark`, PyPI package 
 
 ## 3. Cost guardrails
 
-- Anonymous visitors may only run pre-computed example queries served from cache. Free-form input requires a user-supplied API key.
-- **Pre-computed example queries are served over `GET /api/search?q=...`** so they are a CORS-simple request (no preflight) and can be cached at the CDN edge. A cached example must render even while Cloud Run is cold-starting or fully down. Free-form input uses `POST` with a user-supplied key and is never cached.
+- Anonymous visitors may run pre-computed example queries served from cache, and may also run free-form input up to a strict rate limit (e.g. 5 requests per minute per IP). An API key is not strictly required for free-form queries.
+- **Pre-computed example queries are served over `GET /api/search?q=...`** so they are a CORS-simple request (no preflight) and can be cached at the CDN edge. A cached example must render even while Cloud Run is cold-starting or fully down. Free-form input uses `POST` and must be heavily rate-limited.
 - Enforce a per-day token quota in the application layer. On exhaustion, degrade to retrieval-only mode — never return an error page.
 - All batch embedding runs use the provider's Batch endpoint and persist results to disk. Re-indexing must never re-pay for embeddings already computed. The on-disk cache key includes the embedding dimension, so a 512- or 1536-dim run never silently reuses 768-dim vectors.
 - Every LLM call site must declare its purpose tag so token cost can be attributed by feature.

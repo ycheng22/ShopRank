@@ -57,7 +57,7 @@ async def precompute(args, settings):
 
     conn = await asyncpg.connect(db_url)
 
-    with open("scripts/schema.sql", "r") as f:
+    with open("scripts/schema.sql", "r") as f:  # noqa: ASYNC230
         schema_sql = f.read()
     await conn.execute(schema_sql)
 
@@ -76,7 +76,7 @@ async def precompute(args, settings):
                     res = await search(Query(text=dq.query), config, db_url=db_url)
                     json_str = json.dumps(res.model_dump())
                     records.append((dq.query, dq.locale, chash, json_str))
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to precompute {dq.query}: {e}")
 
     if not args.dry_run and records:

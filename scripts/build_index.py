@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 async def get_peak_gpu_memory():
     try:
-        result = subprocess.run(
+        result = await asyncio.to_thread(
+            subprocess.run,
             ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
             stdout=subprocess.PIPE,
             text=True,
@@ -32,7 +33,7 @@ async def get_peak_gpu_memory():
             ]
         )
         return f"{mem} MiB"
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "N/A (No local GPU or nvidia-smi failed)"
 
 

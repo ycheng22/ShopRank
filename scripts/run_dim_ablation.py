@@ -31,7 +31,8 @@ def _truncate_and_normalize(vector: np.ndarray, dim: int) -> np.ndarray:
 
 async def get_peak_gpu_memory():
     try:
-        result = subprocess.run(
+        result = await asyncio.to_thread(
+            subprocess.run,
             ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
             stdout=subprocess.PIPE,
             text=True,
@@ -45,7 +46,7 @@ async def get_peak_gpu_memory():
             ]
         )
         return f"{mem} MiB"
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "N/A (No local GPU)"
 
 
@@ -137,8 +138,7 @@ async def run_ablation(settings):
         logger.info(f"\n{'=' * 40}\nRunning ablation for dim={dim}\n{'=' * 40}")
 
         logger.info(f"Loading and truncating to {dim}-dim...")
-        start_time = time.time()
-
+        
         records = []
         for i, row in df.iterrows():
             pid = row["product_id"]
