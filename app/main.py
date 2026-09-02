@@ -33,8 +33,34 @@ app.include_router(examples.router, prefix="/api")
 app.include_router(ablation.router, prefix="/api")
 
 
+from typing import Annotated
+
+
+@app.get("/")
+async def root() -> dict[str, str]:
+    return {
+        "service": "ShopRank API",
+        "docs": "/docs",
+        "health": "/healthz",
+        "ui": "http://localhost:4200",
+    }
+
+
+@app.get("/healthz")
+async def healthz(
+    settings: Annotated[Settings, Depends(get_app_settings)] = None,  # type: ignore[assignment]
+) -> dict[str, str]:
+    """Liveness probe. Strictly ZERO database calls."""
+    return {
+        "status": "ok",
+        "version": settings.git_sha,
+    }
+
+
 @app.get("/ping")
-async def ping(settings: Settings = Depends(get_app_settings)) -> dict[str, str]:  # noqa: B008
+async def ping(
+    settings: Annotated[Settings, Depends(get_app_settings)] = None,  # type: ignore[assignment]
+) -> dict[str, str]:
     return {
         "status": "pong",
         "version": settings.git_sha,

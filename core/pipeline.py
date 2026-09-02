@@ -22,6 +22,7 @@ from core.retrievers.dense import DenseRetriever
 class ShopRankPipelineConfig(PipelineConfig):
     """Extended pipeline config with ShopRank-specific knobs."""
 
+    top_k: int = 100
     ef_search: int = 40
     rerank_depth: int = 50
     rrf_k: int = 60

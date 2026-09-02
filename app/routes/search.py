@@ -1,8 +1,9 @@
 import hashlib
 import json
 import logging
+import re
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 import asyncpg
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
@@ -31,6 +32,50 @@ def _check_and_update_quota(tokens: int, limit: int) -> bool:
         return False
     _daily_tokens += tokens
     return True
+
+
+def _clean_text(text: str) -> str:
+    return re.sub(r"<[^>]+>", " ", text).strip()
+
+
+def _extract_title(text: str) -> str:
+    clean = _clean_text(text)
+    if not clean:
+        return ""
+    if len(clean) <= 120:
+        return clean
+    truncated = clean[:120].rsplit(" ", 1)[0]
+    return truncated + "..."
+
+
+def _extract_description(text: str) -> str:
+    clean = _clean_text(text)
+    if not clean:
+        return ""
+    if len(clean) <= 120:
+        return ""
+    return clean[len(clean[:120].rsplit(" ", 1)[0]) :].strip()
+
+
+async def _enrich_hits_with_product_info(
+    conn: asyncpg.Connection, hits: list[dict[str, Any]]
+) -> None:
+    if not hits:
+        return
+    pids = [h["product_id"] for h in hits if "product_id" in h]
+    if not pids:
+        return
+    rows = await conn.fetch(
+        "SELECT product_id, product_text FROM products WHERE product_id = ANY($1)",
+        pids,
+    )
+    text_map = {r["product_id"]: r["product_text"] for r in rows}
+    for h in hits:
+        pid = h.get("product_id")
+        ptext = text_map.get(pid, "")
+        h["product_text"] = ptext
+        h["title"] = _extract_title(ptext)
+        h["description"] = _extract_description(ptext)
 
 
 class SearchRequest(BaseModel):
@@ -73,6 +118,7 @@ async def search_preset(
         embed_dim=768,
         ef_search=40,
         locale=locale,
+        top_k=100,
     )
     chash = get_config_hash(config)
 
@@ -86,7 +132,22 @@ async def search_preset(
                 chash,
             )
             if row:
-                return json.loads(row["response_json"])
+                data = json.loads(row["response_json"])
+                hits = data.get("hits", [])
+                if hits and not hits[0].get("title"):
+                    await _enrich_hits_with_product_info(conn, hits)
+                    # Opportunistically update cache so future reads have details cached
+                    try:
+                        await conn.execute(
+                            "UPDATE demo_cache SET response_json = $1 WHERE query_text = $2 AND locale = $3 AND config_hash = $4",
+                            json.dumps(data),
+                            q,
+                            locale,
+                            chash,
+                        )
+                    except (asyncpg.PostgresError, OSError):
+                        pass
+                return data
             else:
                 raise HTTPException(
                     status_code=400,
@@ -131,5 +192,13 @@ async def search_freeform(
     out = res.model_dump()
     if not quota_ok:
         out["quota_exhausted"] = True
+
+    hits = out.get("hits", [])
+    if hits:
+        conn = await asyncpg.connect(settings.database_url)
+        try:
+            await _enrich_hits_with_product_info(conn, hits)
+        finally:
+            await conn.close()
 
     return out

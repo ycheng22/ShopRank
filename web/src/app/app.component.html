@@ -77,8 +77,12 @@
       <div class="result-card" *ngFor="let hit of results; let i = index">
         <div class="result-summary" (click)="toggleExpand(i)">
           <div class="rank-badge">#{{ i + 1 }}</div>
-          <div class="product-id">
-            <strong>{{ hit.product_id }}</strong>
+          <div class="product-info">
+            <h4 class="product-title">{{ hit.title || ('Product ' + hit.product_id) }}</h4>
+            <div class="product-meta">
+              <span class="product-asin">ID: {{ hit.product_id }}</span>
+              <span class="product-snippet" *ngIf="hit.description">{{ hit.description | slice:0:150 }}...</span>
+            </div>
           </div>
           <div class="scores-preview">
             <span class="score-pill">Score: {{ hit.raw_score | number:'1.4-4' }}</span>
@@ -87,7 +91,12 @@
         </div>
         
         <div class="result-detail" *ngIf="expandedRow === i">
-          <h4>Score Breakdown</h4>
+          <div class="full-product-info" *ngIf="hit.product_text">
+            <h4 class="detail-subtitle">Item Details</h4>
+            <div class="product-full-text" [innerHTML]="hit.product_text"></div>
+          </div>
+
+          <h4 class="detail-subtitle">Score Breakdown & Retrieval Provenance</h4>
           <table class="explain-table">
             <tr>
               <th>Stage</th>

@@ -21,6 +21,9 @@ All notable changes, architectural decisions, feature implementations, and evalu
   - Configured `environment.prod.ts` via build-time injection for dynamic API routing.
 - **Local Dev Orchestrator (`start_local.ps1`)**: Single PowerShell launcher to concurrently start both the FastAPI backend (`uvicorn`) and the Angular 21 dev server (`ng serve`).
 - **Cloudflare Pages Deployment**: Added `cloudflare/pages-action` to `.github/workflows/deploy.yml` for serving the static Angular bundle globally.
+- **Rich Product Metadata & UI Presentation (`app/routes/search.py`, `web/`)**:
+  - Enriched both cached preset and free-form search results with `title`, `description` snippet, and `product_text`.
+  - Upgraded Angular UI result cards to display human-readable product titles, formatted ASIN badges, context snippets, and full expandable catalog descriptions alongside the score provenance breakdown.
 - **Demo Scenarios Documentation (`docs/DEMO-SCENARIOS.md`)**: Documents the rationale behind the 8 preset queries (e.g. Exact Match, Long-tail, Misspelling, Cross-lingual).
 
 ### Changed

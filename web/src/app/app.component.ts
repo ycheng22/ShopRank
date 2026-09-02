@@ -14,6 +14,9 @@ interface ScoreBreakdown {
 
 interface Hit {
   product_id: string;
+  title?: string;
+  description?: string;
+  product_text?: string;
   raw_score: number;
   breakdown: ScoreBreakdown;
 }
