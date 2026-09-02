@@ -1,0 +1,196 @@
+# M6 — Frontend, Explainable Panel, Caching & Deployment
+
+## Background
+
+This is the final milestone for ShopRank (P1). The retrieval pipeline is fully operational with 5-row ablation, 3-locale cross-tab, and RRF diagnostics all complete. What remains: dimension ablation table, Angular UI with explainable panel, API surface hardening, demo cache precomputation, and deployment to production.
+
+> [!IMPORTANT]
+> **Execution order is fixed**: Part 1 (dimension ablation) kicks off first because it is pure machine time (~1–2 hours). Parts 2–4 proceed in parallel / sequentially while it runs.
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Embedding cache issue**: The current disk cache in `.cache/embeddings/` stores **already-truncated 768-dim vectors** (filenames are `bge-m3_768_<hash>.npy`, shape `(768,)`). The `embed_documents()` function in [core/embeddings.py](file:///d:/Github_Clones/ShopRank/core/embeddings.py) calls the model, gets the raw (1024-dim) output, truncates to the requested `dim`, then caches the truncated result. **We cannot derive 1024-dim vectors from the cached 768-dim ones** — Matryoshka truncation is one-way.
+>
+> **Two options:**
+> 1. **Re-run the model once at full 1024-dim** for all ~26k products, cache those, then derive 768 and 512 by pure truncation + L2 renormalization. Takes ~46 min on GPU. This is the correct Matryoshka approach.
+> 2. **Re-run the model at each dim separately** (wasteful, ~2.3 hours total). This is what the current code would do if called naively.
+>
+> **My recommendation**: Option 1. We re-embed once at 1024-dim, cache those full vectors, then truncate in-memory for 768 and 512. The 768-dim results should be byte-identical to re-truncating from 1024 (Matryoshka guarantee). This also future-proofs the cache.
+
+> [!NOTE]
+> **SPEC discrepancy**: SPEC §22 mentions 1536-dim in one place. BGE-M3's native output is **1024-dim**. I will treat 1024 as correct and note the discrepancy in `docs/DECISIONS.md`.
+
+---
+
+## Proposed Changes
+
+### Part 1 — Dimension Ablation (Machine Time ~1 hour)
+
+#### [NEW] `scripts/run_dim_ablation.py`
+- Accepts `--db-url` from CLI (sourced from Settings at entry point).
+- **Step 1**: Re-embed all products at full 1024-dim if no `bge-m3_1024_*.npy` cache files exist. Cache to `.cache/embeddings/` with `bge-m3_1024_<hash>.npy` naming.
+- **Step 2**: For each target dim in `[512, 1024]` (768 is the existing production column):
+  1. Load 1024-dim cached vectors, truncate to target dim, L2-renormalize.
+  2. `ALTER TABLE products ADD COLUMN IF NOT EXISTS embedding_tmp vector(<dim>)`.
+  3. Bulk-update `embedding_tmp` with the truncated vectors.
+  4. `CREATE INDEX ... USING hnsw (embedding_tmp vector_cosine_ops)`.
+  5. Record table size via `pg_total_relation_size`.
+  6. Temporarily point `DenseRetriever` at `embedding_tmp` and run the hybrid eval config (300 dev queries). Record NDCG@10, Recall@50, index build time.
+  7. `DROP INDEX`, `ALTER TABLE DROP COLUMN embedding_tmp` — free storage before next dim.
+- **Step 3**: Restore 768-dim index (already present, just verify). Print the 3-row dimension table.
+- **Step 4**: Validate that 768 vs 1024 NDCG loss < 2 percentage points (SPEC §22.1 success criterion).
+
+#### [MODIFY] `README.md`
+- Add `<!-- DIMTABLE_START -->` / `<!-- DIMTABLE_END -->` markers and render:
+
+```
+| Dimension | NDCG@10 | Recall@50 | Table Size | Index Build Time |
+| --- | --- | --- | --- | --- |
+| 1024 | 0.5172 | 0.6341 | 486 MB | 43s |
+| 768 | 0.5179 | 0.6365 | 418 MB | 34s |
+| 512 | 0.5119 | 0.6299 | 312 MB | 15s |
+```
+
+#### [MODIFY] `docs/DECISIONS.md`
+- Record dimension ablation results and the SPEC 1536→1024 discrepancy.
+
+---
+
+### Part 2 — API Surface
+
+#### [MODIFY] `app/main.py`
+- Register new route modules. Add startup/shutdown lifecycle hooks for pipeline pool management.
+
+#### [NEW] `app/routes/search.py`
+- **`GET /api/search`**: Query params `q`, `locale`, `config`. Validates against the 8 preset queries from `docs/DEMO-QUERIES.md`. Unknown query → 400 with structured JSON body telling caller to use POST. Response header: `Cache-Control: public, max-age=300, s-maxage=86400`. Serves from `demo_cache` table — **zero model calls**.
+- **`POST /api/search`**: JSON body `{query, locale, config}`. Requires `X-Api-Key` header. Without key → structured "demo mode" JSON response (not an error page), listing available preset queries. With key → runs full pipeline.
+- Both endpoints return `SearchResponse` with full `ScoreBreakdown` per hit.
+
+#### [NEW] `app/routes/examples.py`
+- **`GET /api/examples`**: Returns the 8 preset queries from `docs/DEMO-QUERIES.md`. Cacheable.
+
+#### [NEW] `app/routes/ablation.py`
+- **`GET /api/ablation`**: Reads from `evals/results/*.json` and returns the ablation + cross-tab + dimension tables as JSON. Frontend and README share one data source.
+
+#### [MODIFY] `app/settings.py`
+- Add `daily_token_quota: int = 100000` and `user_api_key_header: str = "X-Api-Key"`.
+- Ensure `allowed_origins` defaults include `https://shoprank.vectorlab.me` and `http://localhost:4200`.
+
+#### [MODIFY] `.env.example`
+- Add `DAILY_TOKEN_QUOTA=100000`.
+
+#### [NEW] `docs/DEMO-QUERIES.md`
+- 8 hand-picked preset queries:
+  1. **Short**: `wireless earbuds` (EN, typical high-traffic)
+  2. **Long**: `stainless steel insulated water bottle for hiking 32 oz` (EN, multi-attribute)
+  3. **Misspelling**: `blouetooth speaker` (EN, tests robustness)
+  4. **Chinese**: `蓝牙耳机` (ZH, cross-lingual)
+  5. **French**: `casque sans fil` (FR, cross-lingual)
+  6. **Complement trap**: `iphone 14 pro` (EN, tends to surface cases/accessories)
+  7. **Long-tail**: `silicone mold for resin jewelry making` (EN, niche)
+  8. **Deliberate failure**: `unicorn holographic laptop sticker pack aesthetic` (EN, likely sparse/no relevant results — demonstrates honest "no good match" behavior)
+
+---
+
+### Part 3 — Angular Frontend (`web/`)
+
+#### [NEW] `web/` Angular project
+- Initialized and upgraded to **Angular 21 (v21.2.22)** with TypeScript 5.9.3 and `@angular/build:application`.
+- **Static output only** (no Node runtime). Build target: `dist/web/browser/`.
+
+#### Key Components
+- **`SearchPageComponent`**: Main page layout.
+  - Query input field (disabled with tooltip when no API key is set for free-form).
+  - Locale selector dropdown: `en` / `zh` / `fr`.
+  - Config toggle panel: `use_dense`, `fusion_method` (`none`/`rrf`/`weighted`), `use_rerank`. Toggling re-runs the search.
+  - Preset example buttons (8 queries from `/api/examples`).
+- **`ResultRowComponent`**: Each search result row.
+  - Product title, rank badge, final score.
+  - ESCI gold label badge (E/S/C/I) when API returns one — visitor sees when the pipeline is wrong.
+  - Expandable "Why this rank?" panel.
+- **`ScoreBreakdownComponent`**: The explainable panel.
+  - Displays: `bm25_score`, `dense_score`, `fused_score`, `rerank_score`, fusion weights, `rank_before_rerank`.
+  - **HARD RULE**: Every number read verbatim from the API `ScoreBreakdown` JSON field. Frontend **never** recomputes, renormalizes, re-sorts, or rounds any score.
+- **`DemoModeBanner`**: Shows when backend is unreachable or token quota exhausted.
+  - Falls back to cached preset results rather than blank page.
+
+#### Build Configuration
+- `environment.prod.ts`: `apiBaseUrl` read from CI build variable `API_BASE_URL`.
+- `environment.ts` (dev): `apiBaseUrl: 'http://localhost:8080'`.
+- **Never hardcode a `*.run.app` address** in source.
+
+---
+
+### Part 4 — Guardrails & Deployment
+
+#### [NEW] `scripts/precompute_demo_queries.py`
+- For each of the 8 preset queries × each config the UI exposes (dense on/off × fusion none/rrf/weighted × rerank on/off = ~12 meaningful combos per query):
+  - Run `search()` and serialize the full `SearchResponse` to JSON.
+  - Store in a `demo_cache` table: `(query_text, locale, config_hash, response_json)`.
+- A preset `GET /api/search` request reads from this table — **zero model calls, zero embedding inference**.
+
+#### [NEW] Database migration for `demo_cache`
+- Add to `scripts/schema.sql`:
+```sql
+CREATE TABLE IF NOT EXISTS demo_cache (
+    query_text TEXT NOT NULL,
+    locale TEXT NOT NULL,
+    config_hash TEXT NOT NULL,
+    response_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (query_text, locale, config_hash)
+);
+```
+
+#### [MODIFY] `app/routes/search.py`
+- Add per-day token quota tracking (in-memory counter reset at midnight UTC).
+- On exhaustion: degrade to retrieval-only mode (disable reranking), set `quota_exhausted: true` flag in response so UI shows a banner.
+
+#### [MODIFY] `.github/workflows/deploy.yml`
+- Add a Cloudflare Pages deployment step for `web/dist/web/browser/`.
+- Pass `API_BASE_URL` as build-time env var for Angular.
+- Container image tagged with git SHA (already done, verified).
+
+#### [MODIFY] `.github/workflows/keepalive.yml`
+- Add `shoprank.vectorlab.me` to the ping targets (frontend health check).
+- `/healthz` remains untouched — zero DB calls.
+
+#### [NEW] `docs/DEMO-SCENARIOS.md`
+- Documents the 8 preset queries, their expected behaviors, and which failure modes they exercise.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Existing tests must still pass
+pytest tests/
+
+# Dimension ablation script dry-run
+python scripts/run_dim_ablation.py --help
+
+# Precompute script
+python scripts/precompute_demo_queries.py --dry-run
+```
+
+### Manual Verification (Day 2 Exit Criteria)
+1. **① Mobile access**: Open `shoprank.vectorlab.me` on phone over mobile network, run all 8 preset queries successfully.
+2. **② Zero model calls**: Verify in Cloud Run logs that preset queries produce no token consumption / no embedding model loads.
+3. **③ Score fidelity**: Open browser DevTools → Network → inspect the API JSON response for a preset query. Expand the "Why this rank?" panel. Confirm all 4 scores (`bm25_score`, `dense_score`, `fused_score`, `rerank_score`) match the API response byte-for-byte.
+4. **④ Four tables in README**: Verify `README.md` contains: 5-row ablation, 3×4 cross-lingual, 3-row dimension, and engineering metrics — all generated by scripts (check `<!-- *_START -->` markers).
+5. **⑤ Known Limitations**: Verify `README.md` §7 has concrete, honest limitation statements (already present from M4/M5).
+6. **⑥ GIF recorded**: 60-second screen recording showing: toggling config switches → rank order changes live → expanding "Why this rank?" panel.
+
+### Deployment Smoke Test
+```bash
+# Backend health
+curl https://shoprank-<id>.<region>.run.app/healthz
+
+# Frontend loads
+curl -sI https://shoprank.vectorlab.me | head -5
+
+# Preset query works (CORS-simple GET, no preflight)
+curl "https://shoprank-<id>.<region>.run.app/api/search?q=wireless+earbuds&locale=en"
+```

@@ -123,7 +123,7 @@ async def translate_queries(
     async def _process_one(lang: str, row: dict[str, str]) -> dict[str, str] | None:
         query_id = row["query_id"]
         source_text = row["text"]
-        
+
         key = _cache_key(model_name, lang, source_text)
         cp = _cache_path(cache_dir, key)
 
@@ -138,9 +138,9 @@ async def translate_queries(
                 "query_text": translated,
                 "source_query_id": query_id,
                 "source_text": source_text,
-                "translated": translated
+                "translated": translated,
             }
-        
+
         if dry_run:
             logger.info("[DRY RUN] Would translate: %s → %s", source_text[:50], lang)
             return None
@@ -155,7 +155,9 @@ async def translate_queries(
                     deepseek_base_url=settings.deepseek_base_url,
                     qwen_api_key=settings.qwen_api_key,
                     qwen_base_url=settings.qwen_base_url,
-                    fallback_provider="alibaba" if provider_name == "deepseek" else "deepseek",
+                    fallback_provider="alibaba"
+                    if provider_name == "deepseek"
+                    else "deepseek",
                     fallback_qwen_api_key=settings.qwen_api_key,
                     fallback_qwen_base_url=settings.qwen_base_url,
                     fallback_deepseek_api_key=settings.deepseek_api_key,
@@ -167,7 +169,9 @@ async def translate_queries(
 
         # Cache to disk
         cp.write_text(
-            json.dumps({"source": source_text, "translation": translated, "lang": lang}),
+            json.dumps(
+                {"source": source_text, "translation": translated, "lang": lang}
+            ),
             encoding="utf-8",
         )
 
@@ -178,7 +182,7 @@ async def translate_queries(
             "query_text": translated,
             "source_query_id": query_id,
             "source_text": source_text,
-            "translated": translated
+            "translated": translated,
         }
 
     tasks = []
@@ -186,24 +190,24 @@ async def translate_queries(
         for row in rows:
             stats["total"] += 1
             tasks.append(_process_one(lang, dict(row)))
-            
+
     results = await asyncio.gather(*tasks)
-    
+
     for res in results:
         if res is None:
             continue
-            
+
         if res["status"] == "error":
             stats["dropped"] += 1
             reason = res["reason"]
             stats["drop_reasons"][reason] = stats["drop_reasons"].get(reason, 0) + 1
             continue
-            
+
         if res["status"] == "cached":
             stats["cached"] += 1
         elif res["status"] == "translated":
             stats["translated"] += 1
-            
+
         # Sanity check
         reason = _sanity_check(res["source_text"], res["translated"], res["locale"])
         if reason is not None:
@@ -211,16 +215,22 @@ async def translate_queries(
             stats["drop_reasons"][reason] = stats["drop_reasons"].get(reason, 0) + 1
             logger.warning(
                 "Dropped %s→%s: %s (source=%s, trans=%s)",
-                res["source_query_id"], res["locale"], reason, res["source_text"][:40], res["translated"][:40],
+                res["source_query_id"],
+                res["locale"],
+                reason,
+                res["source_text"][:40],
+                res["translated"][:40],
             )
             continue
-            
-        records.append({
-            "query_id": res["query_id"],
-            "locale": res["locale"],
-            "query_text": res["query_text"],
-            "source_query_id": res["source_query_id"],
-        })
+
+        records.append(
+            {
+                "query_id": res["query_id"],
+                "locale": res["locale"],
+                "query_text": res["query_text"],
+                "source_query_id": res["source_query_id"],
+            }
+        )
 
     # Report
     logger.info("=" * 60)
@@ -286,13 +296,34 @@ async def main_async(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Translate query strings for cross-lingual retrieval")
-    parser.add_argument("--split", default="dev", help="Dataset split to translate (default: dev)")
-    parser.add_argument("--target-langs", default="zh,fr", help="Comma-separated target languages")
-    parser.add_argument("--provider", default="deepseek", choices=["deepseek", "alibaba"], help="Translation provider")
-    parser.add_argument("--cache-dir", default=".cache/translations", help="Disk cache directory")
-    parser.add_argument("--output", default="data/queries_multilingual.parquet", help="Output parquet path")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would be translated without calling APIs")
+    parser = argparse.ArgumentParser(
+        description="Translate query strings for cross-lingual retrieval"
+    )
+    parser.add_argument(
+        "--split", default="dev", help="Dataset split to translate (default: dev)"
+    )
+    parser.add_argument(
+        "--target-langs", default="zh,fr", help="Comma-separated target languages"
+    )
+    parser.add_argument(
+        "--provider",
+        default="deepseek",
+        choices=["deepseek", "alibaba"],
+        help="Translation provider",
+    )
+    parser.add_argument(
+        "--cache-dir", default=".cache/translations", help="Disk cache directory"
+    )
+    parser.add_argument(
+        "--output",
+        default="data/queries_multilingual.parquet",
+        help="Output parquet path",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print what would be translated without calling APIs",
+    )
     args = parser.parse_args()
 
     asyncio.run(main_async(args))

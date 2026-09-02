@@ -27,3 +27,12 @@ CREATE TABLE IF NOT EXISTS qrels (
     esci_label TEXT NOT NULL,
     PRIMARY KEY (query_id, product_id)
 );
+
+CREATE TABLE IF NOT EXISTS demo_cache (
+    query_text TEXT NOT NULL,
+    locale TEXT NOT NULL,
+    config_hash TEXT NOT NULL,
+    response_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (query_text, locale, config_hash)
+);

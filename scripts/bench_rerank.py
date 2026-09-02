@@ -15,11 +15,24 @@ import numpy as np
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Benchmark cross-encoder reranker latency on CPU")
-    parser.add_argument("--top-k", type=int, default=50, help="Number of candidates to rerank per query")
-    parser.add_argument("--iterations", type=int, default=50, help="Number of benchmark iterations")
-    parser.add_argument("--model", type=str, default="BAAI/bge-reranker-v2-m3", help="Model name")
-    parser.add_argument("--cache-dir", type=str, default="D:/huggingface_cache/hub", help="HuggingFace cache directory")
+    parser = argparse.ArgumentParser(
+        description="Benchmark cross-encoder reranker latency on CPU"
+    )
+    parser.add_argument(
+        "--top-k", type=int, default=50, help="Number of candidates to rerank per query"
+    )
+    parser.add_argument(
+        "--iterations", type=int, default=50, help="Number of benchmark iterations"
+    )
+    parser.add_argument(
+        "--model", type=str, default="BAAI/bge-reranker-v2-m3", help="Model name"
+    )
+    parser.add_argument(
+        "--cache-dir",
+        type=str,
+        default="D:/huggingface_cache/hub",
+        help="HuggingFace cache directory",
+    )
     args = parser.parse_args()
 
     print(f"Loading model: {args.model} on CPU...")
@@ -77,19 +90,19 @@ def main() -> None:
     p99 = float(np.percentile(latencies_arr, 99))
     mean = float(np.mean(latencies_arr))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Rerank Benchmark Results")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Model:      {args.model}")
     print("Device:     CPU")
     print(f"Top-K:      {args.top_k}")
     print(f"Iterations: {args.iterations} (excluding 3 warmup)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Mean:       {mean:.1f} ms")
     print(f"P50:        {p50:.1f} ms")
     print(f"P95:        {p95:.1f} ms")
     print(f"P99:        {p99:.1f} ms")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Check against budget
     existing_p95 = 279.0  # Current hybrid pipeline p95

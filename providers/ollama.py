@@ -10,11 +10,8 @@ class OllamaProvider:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/api/embed",
-                json={
-                    "model": "bge-m3",
-                    "input": texts
-                },
-                timeout=300.0
+                json={"model": "bge-m3", "input": texts},
+                timeout=300.0,
             )
             response.raise_for_status()
             data = response.json()

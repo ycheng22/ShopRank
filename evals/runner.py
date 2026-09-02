@@ -142,6 +142,7 @@ async def run(
         eval_config = config.model_copy(update={"locale": locale})
 
         from tqdm.asyncio import tqdm
+
         for q_id, q in tqdm(queries, desc=f"Evaluating {config_label}"):
             start_t = time.perf_counter()
 

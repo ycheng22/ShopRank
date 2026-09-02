@@ -1,0 +1,121 @@
+<div class="container">
+  <header>
+    <h1>ShopRank <span class="badge">P1</span></h1>
+    <p>Explainable E-commerce Search</p>
+  </header>
+  
+  <div class="demo-banner" *ngIf="presetError">
+    <p><strong>Error:</strong> {{ presetError }}</p>
+  </div>
+  
+  <div class="demo-banner info" *ngIf="demoModeMessage">
+    <p><strong>Demo Mode:</strong> {{ demoModeMessage }}</p>
+    <p>Try one of the <a href="#examples">preset examples</a> below.</p>
+  </div>
+  
+  <div class="demo-banner warning" *ngIf="quotaExhausted">
+    <p><strong>Quota Exhausted:</strong> Free-form API limit reached for today. Reranking has been disabled and results are degraded.</p>
+  </div>
+
+  <section class="search-panel">
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search products..." (keyup.enter)="onSearch()" />
+      <button (click)="onSearch()" [disabled]="isSearching">
+        {{ isSearching ? 'Searching...' : 'Search' }}
+      </button>
+    </div>
+    
+    <div class="config-panel">
+      <div class="config-group">
+        <label>API Key:</label>
+        <input type="password" [(ngModel)]="apiKey" placeholder="Leave blank for presets" />
+      </div>
+      <div class="config-group">
+        <label>Locale:</label>
+        <select [(ngModel)]="locale">
+          <option value="en">English</option>
+          <option value="zh">中文 (Chinese)</option>
+          <option value="fr">Français (French)</option>
+        </select>
+      </div>
+      <div class="config-group">
+        <label>Pipeline:</label>
+        <label class="checkbox">
+          <input type="checkbox" [(ngModel)]="useDense" /> Dense
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" [(ngModel)]="useRerank" [disabled]="quotaExhausted" /> Rerank
+        </label>
+      </div>
+      <div class="config-group">
+        <label>Fusion:</label>
+        <select [(ngModel)]="fusionMethod" [disabled]="!useDense">
+          <option value="none">None</option>
+          <option value="rrf">RRF</option>
+          <option value="weighted">Weighted</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="examples-panel" id="examples">
+    <h3>Preset Examples (Zero Latency Cache)</h3>
+    <div class="examples-grid">
+      <button class="example-btn" *ngFor="let ex of examples" (click)="runPreset(ex)">
+        <strong>{{ ex.query }}</strong> ({{ ex.locale }})
+        <span class="desc">{{ ex.description }}</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="results-panel">
+    <div class="results-header" *ngIf="results.length > 0">
+      <h3>Found {{ totalFound }} results</h3>
+    </div>
+    
+    <div class="result-list">
+      <div class="result-card" *ngFor="let hit of results; let i = index">
+        <div class="result-summary" (click)="toggleExpand(i)">
+          <div class="rank-badge">#{{ i + 1 }}</div>
+          <div class="product-id">
+            <strong>{{ hit.product_id }}</strong>
+          </div>
+          <div class="scores-preview">
+            <span class="score-pill">Score: {{ hit.raw_score | number:'1.4-4' }}</span>
+          </div>
+          <div class="expand-icon">{{ expandedRow === i ? '▼' : '▶' }}</div>
+        </div>
+        
+        <div class="result-detail" *ngIf="expandedRow === i">
+          <h4>Score Breakdown</h4>
+          <table class="explain-table">
+            <tr>
+              <th>Stage</th>
+              <th>Score</th>
+            </tr>
+            <tr>
+              <td>BM25 Exact Match</td>
+              <td>{{ hit.breakdown.bm25_score | number:'1.4-4' }}</td>
+            </tr>
+            <tr *ngIf="useDense">
+              <td>Dense Semantic Match</td>
+              <td>{{ hit.breakdown.dense_score | number:'1.4-4' }}</td>
+            </tr>
+            <tr *ngIf="useDense">
+              <td>Fused Score ({{ fusionMethod }})</td>
+              <td>{{ hit.breakdown.fused_score | number:'1.4-4' }}</td>
+            </tr>
+            <tr *ngIf="useRerank && hit.breakdown.rerank_score !== undefined">
+              <td>Cross-Encoder Rerank</td>
+              <td>{{ hit.breakdown.rerank_score | number:'1.4-4' }}</td>
+            </tr>
+            <tr *ngIf="useRerank && hit.breakdown.rank_before_rerank !== undefined">
+              <td>Rank before rerank</td>
+              <td>#{{ hit.breakdown.rank_before_rerank }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

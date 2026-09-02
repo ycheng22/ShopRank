@@ -1,7 +1,7 @@
 import asyncio
 import sys
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from core.pipeline import ShopRankPipelineConfig
@@ -34,6 +34,7 @@ async def main():
 
     print("\nAblation Table:")
     await render_ablation_table()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

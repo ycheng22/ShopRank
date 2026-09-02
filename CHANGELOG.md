@@ -4,6 +4,38 @@ All notable changes, architectural decisions, feature implementations, and evalu
 
 ---
 
+## [Milestone M6 / Day 2] - 2026-09-01
+
+### Added
+- **Dimension Ablation Script (`scripts/run_dim_ablation.py`)**: Automates the extraction, truncation (1024 → 768 → 512), re-indexing, and evaluation of BGE-M3 Matryoshka embeddings.
+- **RESTful API Surface (`app/routes/`)**:
+  - `GET /api/examples`: Returns the list of 8 hard-coded preset demo queries and their descriptions.
+  - `GET /api/search`: Dedicated cache-hit endpoint for preset queries. Fetches precomputed multi-stage search results from `demo_cache` with zero LLM/compute overhead.
+  - `POST /api/search`: The main free-form query endpoint. Parses user configuration (`ShopRankPipelineConfig`), connects to Neon PG, executes BM25/Dense/Fusion/Rerank, and returns Explainable hits. Includes a daily token quota circuit breaker.
+  - `GET /api/ablation`: Returns the raw evaluation metrics (JSON) for the current dimensions.
+- **Demo Cache Layer (`demo_cache` table)**: Precomputes and stores full search result JSONs for all 8 preset queries across 6 different pipeline configs to bypass CPU reranker latency on Cloud Run and avoid free-tier quota exhaustion.
+- **Angular Frontend (`web/`)**:
+  - Upgraded to modern **Angular 21 (v21.2.22)** with TypeScript 5.9.3 and `@angular/build:application`.
+  - Built `SearchPageComponent` for interactive query submission.
+  - Built `ResultRowComponent` with expandable `ScoreBreakdownComponent` exposing BM25, Dense, RRF, and Rerank score provenance.
+  - Configured `environment.prod.ts` via build-time injection for dynamic API routing.
+- **Local Dev Orchestrator (`start_local.ps1`)**: Single PowerShell launcher to concurrently start both the FastAPI backend (`uvicorn`) and the Angular 21 dev server (`ng serve`).
+- **Cloudflare Pages Deployment**: Added `cloudflare/pages-action` to `.github/workflows/deploy.yml` for serving the static Angular bundle globally.
+- **Demo Scenarios Documentation (`docs/DEMO-SCENARIOS.md`)**: Documents the rationale behind the 8 preset queries (e.g. Exact Match, Long-tail, Misspelling, Cross-lingual).
+
+### Changed
+- **Settings & Config (`app/settings.py`)**: Added CORS origin allow-lists (no `*`), `DAILY_TOKEN_QUOTA`, and API Key header validation.
+- **Schema (`scripts/schema.sql`)**: Appended the `demo_cache` table structure.
+- **README & DECISIONS**: 
+  - Logged the findings of the Matryoshka truncation ablation.
+  - 768-dim was officially chosen as the production baseline (achieving NDCG@10 of 0.5179 while keeping DB size at 418 MB, safely below the 500 MB limit).
+
+### Fixed
+- Neon DB Idle connection drop during the 45-minute vector caching phase of ablation by deferring `asyncpg.connect()` until immediately before DB writes.
+- **PostgreSQL TOAST Bloat Mitigation**: Reclaimed ~176 MB of dead vector tuple space left by sequential 512/1024/768 ablation passes via `VACUUM FULL products;`, shrinking active database footprint from 430 MB (480 MB transient peak) to **254 MB** (documented in `docs/DIAGNOSTICS.md`).
+
+---
+
 ## [Milestone M4 + M5] - Reranking, Hard Negative Mining & Multi-Lingual Evaluation (Current Phase)
 
 ### Added

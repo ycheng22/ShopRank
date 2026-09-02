@@ -104,3 +104,12 @@ Local deployment is preferred for development and testing, while Docker deployme
 - **Providers**: DeepSeek (`deepseek-chat`) as primary, Alibaba Qwen (`qwen-plus`) as fallback, to minimize translation costs.
 - **Concurrency**: Bounded to 20 concurrent requests using `asyncio.Semaphore(20)` to prevent 429 Too Many Requests errors.
 - **Data Model**: Evaluated `zh` and `fr` translated queries against the same English product catalog, using Dense retrieval which inherently maps multi-lingual queries to English vectors (via BGE-M3's cross-lingual capabilities). BM25 handles lexical fallback where terms match (e.g. brand names).
+
+## Dimension Ablation (M6)
+- **Goal**: Evaluate the performance trade-off of BGE-M3's Matryoshka Representation Learning capability to fit within Neon's 500 MB limit.
+- **Results**:
+  - 1024-dim: NDCG@10=0.5172, Size=486 MB (Too close to 500 MB limit)
+  - 768-dim: NDCG@10=0.5179, Size=418 MB
+  - 512-dim: NDCG@10=0.5119, Size=312 MB
+- **Decision**: Truncating to **768 dimensions** is the optimal production baseline. It provides an 82 MB safety buffer against the 500 MB limit while actually improving NDCG@10 (0.5179) due to the regularization effect of discarding noisy tail dimensions.
+- **Storage Maintenance Policy**: Sequential vector alterations generate significant out-of-line TOAST dead tuples (~145 MB dead bloat accumulated across 512/1024/768 test runs). Executed `VACUUM FULL products;` to reclaim dead space, bringing total database disk footprint down to **254 MB** (comfortably under the 500 MB quota). Standard operational policy is to mandate `VACUUM FULL` after any offline batch vector migration (see [docs/DIAGNOSTICS.md](file:///d:/Github_Clones/ShopRank/docs/DIAGNOSTICS.md)).

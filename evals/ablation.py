@@ -372,7 +372,9 @@ async def dump_bad_cases() -> None:
     pool = await apg.create_pool(settings.database_url)
 
     try:
-        qrel_rows = await pool.fetch("SELECT query_id, product_id, esci_label FROM qrels")
+        qrel_rows = await pool.fetch(
+            "SELECT query_id, product_id, esci_label FROM qrels"
+        )
         qrels: dict[str, dict[str, str]] = defaultdict(dict)
         for r in qrel_rows:
             qrels[r["query_id"]][r["product_id"]] = r["esci_label"]
@@ -402,7 +404,9 @@ async def dump_bad_cases() -> None:
                 locale=locale,
             )
 
-            scored_queries: list[tuple[float, str, str, list[tuple[str, str, str]]]] = []
+            scored_queries: list[
+                tuple[float, str, str, list[tuple[str, str, str]]]
+            ] = []
 
             for row in q_rows:
                 q_id = row["query_id"]
@@ -468,9 +472,15 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Ablation table and evaluation tools")
-    parser.add_argument("--cross-tab", action="store_true", help="Render cross-lingual table")
-    parser.add_argument("--rrf-diagnostic", action="store_true", help="Run RRF k diagnostic")
-    parser.add_argument("--bad-cases", action="store_true", help="Dump worst queries per locale")
+    parser.add_argument(
+        "--cross-tab", action="store_true", help="Render cross-lingual table"
+    )
+    parser.add_argument(
+        "--rrf-diagnostic", action="store_true", help="Run RRF k diagnostic"
+    )
+    parser.add_argument(
+        "--bad-cases", action="store_true", help="Dump worst queries per locale"
+    )
     parser.add_argument("--run-all", action="store_true", help="Run all eval configs")
     args = parser.parse_args()
 

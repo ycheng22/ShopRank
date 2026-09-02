@@ -40,6 +40,45 @@ flowchart TD
 - [TripAgent (P2 Application)](https://github.com/ycheng22/TripAgent)
 - [GateMark (P3 Evaluation Framework)](https://github.com/ycheng22/GateMark)
 
+## Local Development
+
+### One-Click Start (PowerShell)
+Launch both the FastAPI backend and the Angular 21 frontend simultaneously:
+
+```powershell
+# Launches Backend on http://localhost:8000 and Frontend on http://localhost:4200 in dedicated windows
+.\start_local.ps1
+
+# Optional parameters:
+.\start_local.ps1 -ApiPort 8080 -UiPort 4200
+.\start_local.ps1 -NoNewWindow  # Run both in the current shell as background jobs
+```
+
+### Manual Start
+
+#### 1. Backend API (FastAPI)
+```powershell
+# Ensure dependencies are installed
+uv sync
+
+# Launch API with hot-reload
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+- **API Base**: `http://localhost:8000`
+- **Interactive Swagger Docs**: `http://localhost:8000/docs`
+- **Health Check**: `http://localhost:8000/healthz` (0 DB calls)
+
+#### 2. Frontend UI (Angular 21)
+```powershell
+cd web
+
+# Install dependencies and start dev server
+npm install
+npm start
+```
+- **Frontend App**: `http://localhost:4200`
+- Configured to route API calls to `http://localhost:8000` by default (customizable via `API_BASE_URL` environment variable).
+
 ## 1. Ablation Results (English Dev Split)
 
 All figures below are evaluated on the frozen Amazon ESCI dataset (`small_version=1`, `product_locale='us'`, 300 dev queries over a 29,844 product corpus).
@@ -74,7 +113,19 @@ Evaluated by querying translated dev sets (`zh` and `fr`) against the unchanged 
 - **Lexical Failure on Non-English**: Pure BM25 collapses on Chinese (`0.0155`) due to vocabulary mismatch against English descriptions.
 - **Cross-Lingual Dense Bridge**: Dense retrieval natively bridges cross-lingual embeddings to achieve `0.3013`, which further improves to `0.3821` with Cross-Encoder reranking.
 
-## 3. RRF Parameter Sensitivity & Diagnostics
+## 3. Dimension Ablation (Matryoshka Truncation)
+
+BGE-M3 was trained with Matryoshka Representation Learning, allowing vectors to be cleanly truncated to smaller dimensions while retaining semantic integrity.
+
+| Dimension | NDCG@10 | Recall@50 | Table Size | Index Build Time |
+| --- | --- | --- | --- | --- |
+| 1024 (Native) | 0.5172 | 0.6341 | 486 MB | 43s |
+| 768 (Chosen) | **0.5179** | **0.6365** | 418 MB | 34s |
+| 512 | 0.5119 | 0.6299 | 312 MB | 15s |
+
+- Truncating to **768 dimensions** drops the memory footprint by 68 MB (keeping us safely below Neon's 500 MB free quota constraint), while paradoxically *improving* NDCG (0.5179 vs 0.5172). This demonstrates how Matryoshka models place the most discriminative semantic signal in the earliest dimensions, and that discarding lower-variance tails can act as regularization.
+
+## 4. RRF Parameter Sensitivity & Diagnostics
 
 | RRF Parameter | NDCG@10 | Recall@50 | MRR@10 | p95 Latency (ms) |
 | --- | --- | --- | --- | --- |
@@ -90,7 +141,7 @@ Evaluated by querying translated dev sets (`zh` and `fr`) against the unchanged 
 | --- | --- | --- | --- |
 | **Index Build Time** | 2,811 s (~46 min) | Local GPU offline batch build | PASS |
 | **Peak GPU VRAM** | 7,283 MiB | RTX 2060 SUPER (8,192 MiB limit) | PASS |
-| **Database Disk Usage** | 266 MB | Neon Free Tier (500 MB quota) | PASS (< 60%) |
+| **Database Disk Usage** | 254 MB (post-vacuum) | Neon Free Tier (500 MB quota) | PASS (50.8% quota used) |
 | **Optimal Batch Size** | 32 items (88.7 items/s) | Memory-safe throughput plateau | PASS |
 | **Online Hybrid P95 Latency** | 364.0 ms | Hard SLA: < 800 ms | PASS |
 

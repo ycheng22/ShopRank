@@ -1,6 +1,5 @@
 """Tests for translation sanity checks and cache key generation."""
 
-
 from scripts.translate_queries import _cache_key, _has_cjk, _has_latin, _sanity_check
 
 
@@ -10,7 +9,9 @@ class TestSanityCheck:
         assert _sanity_check("hello", "   ", "zh") == "empty"
 
     def test_identical_translation_rejected(self) -> None:
-        assert _sanity_check("hello world", "hello world", "zh") == "identical_to_source"
+        assert (
+            _sanity_check("hello world", "hello world", "zh") == "identical_to_source"
+        )
 
     def test_wrong_script_zh_rejected(self) -> None:
         """Chinese translation without CJK characters is rejected."""

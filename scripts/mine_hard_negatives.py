@@ -47,7 +47,9 @@ async def mine(args: argparse.Namespace) -> None:
         logger.info("Loaded %d dev queries", len(rows))
 
         # Load qrels
-        qrel_rows = await pool.fetch("SELECT query_id, product_id, esci_label FROM qrels")
+        qrel_rows = await pool.fetch(
+            "SELECT query_id, product_id, esci_label FROM qrels"
+        )
         qrels: dict[str, dict[str, str]] = defaultdict(dict)
         for r in qrel_rows:
             qrels[r["query_id"]][r["product_id"]] = r["esci_label"]
@@ -91,30 +93,39 @@ async def mine(args: argparse.Namespace) -> None:
 
                 # Check thresholds
                 is_hard_neg = False
-                if label in ("I", "Irrelevant") and hit.rank <= args.threshold_i:
-                    is_hard_neg = True
-                elif label in ("C", "Complement") and hit.rank <= args.threshold_c:
-                    is_hard_neg = True
-                elif label in ("S", "Substitute") and hit.rank <= args.threshold_s:
+                if (
+                    label in ("I", "Irrelevant")
+                    and hit.rank <= args.threshold_i
+                    or label in ("C", "Complement")
+                    and hit.rank <= args.threshold_c
+                    or label in ("S", "Substitute")
+                    and hit.rank <= args.threshold_s
+                ):
                     is_hard_neg = True
 
                 if is_hard_neg:
                     breakdown_dict = hit.breakdown.model_dump()
-                    hard_negatives.append({
-                        "query_id": q_id,
-                        "query_text": q_text,
-                        "product_id": hit.product_id,
-                        "product_title": product_texts.get(hit.product_id, ""),
-                        "label": label,
-                        "rank": hit.rank,
-                        "score_breakdown": json.dumps(breakdown_dict),
-                    })
+                    hard_negatives.append(
+                        {
+                            "query_id": q_id,
+                            "query_text": q_text,
+                            "product_id": hit.product_id,
+                            "product_title": product_texts.get(hit.product_id, ""),
+                            "label": label,
+                            "rank": hit.rank,
+                            "score_breakdown": json.dumps(breakdown_dict),
+                        }
+                    )
                     label_counts[label] += 1
                     label_ranks[label].append(hit.rank)
 
             if (i + 1) % 50 == 0:
-                logger.info("Processed %d/%d queries, found %d hard negatives so far",
-                            i + 1, len(rows), len(hard_negatives))
+                logger.info(
+                    "Processed %d/%d queries, found %d hard negatives so far",
+                    i + 1,
+                    len(rows),
+                    len(hard_negatives),
+                )
 
         await close_pipeline()
 
@@ -160,14 +171,33 @@ async def mine(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Mine hard negatives from the current pipeline")
-    parser.add_argument("--threshold-i", type=int, default=10, help="Max rank for Irrelevant to be considered a hard negative")
-    parser.add_argument("--threshold-c", type=int, default=5, help="Max rank for Complement to be considered a hard negative")
-    parser.add_argument("--threshold-s", type=int, default=1, help="Max rank for Substitute to be considered a hard negative")
+    parser = argparse.ArgumentParser(
+        description="Mine hard negatives from the current pipeline"
+    )
+    parser.add_argument(
+        "--threshold-i",
+        type=int,
+        default=10,
+        help="Max rank for Irrelevant to be considered a hard negative",
+    )
+    parser.add_argument(
+        "--threshold-c",
+        type=int,
+        default=5,
+        help="Max rank for Complement to be considered a hard negative",
+    )
+    parser.add_argument(
+        "--threshold-s",
+        type=int,
+        default=1,
+        help="Max rank for Substitute to be considered a hard negative",
+    )
     parser.add_argument("--fusion-method", default="rrf", help="Fusion method to use")
     parser.add_argument("--use-rerank", action="store_true", help="Enable reranking")
     parser.add_argument("--rerank-depth", type=int, default=50, help="Rerank depth")
-    parser.add_argument("--output", default="data/hard_negatives.parquet", help="Output parquet path")
+    parser.add_argument(
+        "--output", default="data/hard_negatives.parquet", help="Output parquet path"
+    )
     args = parser.parse_args()
 
     asyncio.run(mine(args))

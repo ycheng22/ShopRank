@@ -48,9 +48,7 @@ def _get_dense(db_url: str, embed_dim: int, ef_search: int) -> DenseRetriever:
     return _retrievers[key]  # type: ignore[return-value]
 
 
-async def _fetch_product_texts(
-    db_url: str, product_ids: list[str]
-) -> dict[str, str]:
+async def _fetch_product_texts(db_url: str, product_ids: list[str]) -> dict[str, str]:
     """Fetch product texts for reranking from the database."""
     if not product_ids:
         return {}
@@ -87,15 +85,11 @@ async def search(
 
     if config.use_bm25:
         bm25 = _get_bm25(db_url, locale=config.locale)
-        tasks["bm25"] = asyncio.create_task(
-            bm25.retrieve(query, top_k=config.top_k)
-        )
+        tasks["bm25"] = asyncio.create_task(bm25.retrieve(query, top_k=config.top_k))
 
     if config.use_dense:
         dense = _get_dense(db_url, config.embed_dim, config.ef_search)
-        tasks["dense"] = asyncio.create_task(
-            dense.retrieve(query, top_k=config.top_k)
-        )
+        tasks["dense"] = asyncio.create_task(dense.retrieve(query, top_k=config.top_k))
 
     runs: dict[str, list[ScoredHit]] = {}
     if tasks:

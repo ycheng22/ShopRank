@@ -50,8 +50,8 @@ class BM25Retriever:
             for rank_0_indexed, row in enumerate(rows):
                 results.append(
                     ScoredHit(
-                        product_id=row['product_id'],
-                        raw_score=float(row['raw_score']),
+                        product_id=row["product_id"],
+                        raw_score=float(row["raw_score"]),
                         retriever_name="bm25",
                         rank=rank_0_indexed + 1,
                     )
