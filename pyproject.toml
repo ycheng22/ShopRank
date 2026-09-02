@@ -44,6 +44,7 @@ target-version = "py312"
 python_version = "3.12"
 strict = true
 ignore_missing_imports = true
+disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
 pythonpath = [
