@@ -64,6 +64,8 @@ jobs:
         region: ${{ vars.GCP_REGION }}
         env_vars: |
           GIT_SHA=${{ github.sha }}
+          ENVIRONMENT=production
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
         flags: |
           --allow-unauthenticated
           --min-instances=0

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = [
         "http://localhost:4200",
         "https://shoprank.vectorlab.me",
+        "https://shoprank.pages.dev",
     ]
     environment: str = "local"
     log_level: str = "INFO"
