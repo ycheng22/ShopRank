@@ -47,6 +47,7 @@ ignore_missing_imports = true
 disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 pythonpath = [
   "."
 ]

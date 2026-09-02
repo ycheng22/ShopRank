@@ -1,8 +1,9 @@
 import getpass
 import json
-import urllib.request
-import urllib.error
 import sys
+import urllib.error
+import urllib.request
+
 
 def main():
     print("=== Cloudflare Pages Debugger ===")
@@ -38,7 +39,7 @@ def main():
                 print("If GitHub Actions failed with 404, the Account ID or Token in GitHub Secrets does not match the ones you just tested.")
             else:
                 print("\n[CONCLUSION]")
-                print(f"'shoprank' is NOT in this account. The Account ID you provided is wrong.")
+                print("'shoprank' is NOT in this account. The Account ID you provided is wrong.")
     except urllib.error.HTTPError as e:
         print(f" -> [FAILED] HTTP {e.code}. The token does not have access to Account {account_id}, or the Account ID is completely wrong.")
 

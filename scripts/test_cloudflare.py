@@ -37,10 +37,10 @@ def api_request(url: str, token: str) -> tuple[int, dict]:
     except urllib.error.HTTPError as e:
         try:
             data = json.loads(e.read().decode("utf-8"))
-        except Exception:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             data = {"error": str(e)}
         return e.code, data
-    except Exception as e:
+    except urllib.error.URLError as e:
         return 0, {"error": str(e)}
 
 
@@ -54,7 +54,7 @@ def test_cloudflare(token: str, account_id: str | None = None, project_name: str
     status, data = api_request("https://api.cloudflare.com/client/v4/user/tokens/verify", token)
     if status == 200 and data.get("success"):
         result = data.get("result", {})
-        print(f"   [SUCCESS] Token is valid!")
+        print("   [SUCCESS] Token is valid!")
         print(f"   - Token ID: {result.get('id')}")
         print(f"   - Status: {result.get('status')}")
     else:
@@ -72,7 +72,7 @@ def test_cloudflare(token: str, account_id: str | None = None, project_name: str
     status, data = api_request(pages_url, token)
     if status == 200 and data.get("success"):
         projects = [p.get("name") for p in data.get("result", [])]
-        print(f"   [SUCCESS] Successfully authenticated with Pages API!")
+        print("   [SUCCESS] Successfully authenticated with Pages API!")
         print(f"   - Existing Pages projects in this account: {projects}")
     else:
         print(f"   [FAILED] Unable to access Pages for account {account_id} (HTTP {status})")
@@ -91,7 +91,7 @@ def test_cloudflare(token: str, account_id: str | None = None, project_name: str
         print(f"   - Pages URL: https://{subdomain}")
     elif status == 404:
         print(f"   [NOTE] Project '{project_name}' does not exist yet.")
-        print(f"   - (The GitHub action or wrangler can create it on first deploy if the token has Edit permissions).")
+        print("   - (The GitHub action or wrangler can create it on first deploy if the token has Edit permissions).")
     else:
         print(f"   [FAILED] Error checking project '{project_name}' (HTTP {status})")
         print(f"   - Response: {json.dumps(data, indent=2)}")
