@@ -1,8 +1,18 @@
-"""Tests for cross-encoder reranker — score preservation and field integrity."""
+from unittest.mock import MagicMock
 
+import pytest
 from retrieval_core.models import Query, ScoreBreakdown, ScoredHit
 
 from core.rerankers.cross_encoder import rerank
+
+
+@pytest.fixture(autouse=True)
+def _mock_cross_encoder_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    mock_model = MagicMock()
+    mock_model.predict.side_effect = lambda pairs: [
+        float(len(pairs) - i) for i in range(len(pairs))
+    ]
+    monkeypatch.setattr("core.rerankers.cross_encoder._model", mock_model)
 
 
 def _make_hit(

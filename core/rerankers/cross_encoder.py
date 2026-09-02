@@ -19,15 +19,27 @@ _model = None
 _model_name: str = ""
 
 
+def _get_default_cache_dir() -> str | None:
+    import os
+    import sys
+
+    if sys.platform == "win32" and os.path.exists("D:\\"):
+        return "D:/huggingface_cache/hub"
+    return None
+
+
 def _load_model(
     model_name: str = "BAAI/bge-reranker-v2-m3",
-    cache_dir: str = "D:/huggingface_cache/hub",
+    cache_dir: str | None = None,
 ) -> None:
     """Load the cross-encoder model once, globally."""
     global _model, _model_name
 
     if _model is not None:
         return
+
+    if cache_dir is None:
+        cache_dir = _get_default_cache_dir()
 
     logger.info("Loading cross-encoder model %s on CPU …", model_name)
     start = time.perf_counter()
@@ -48,7 +60,7 @@ def rerank(
     product_texts: dict[str, str],
     *,
     model_name: str = "BAAI/bge-reranker-v2-m3",
-    cache_dir: str = "D:/huggingface_cache/hub",
+    cache_dir: str | None = None,
 ) -> list[ScoredHit]:
     """Rerank hits using the cross-encoder.
 
