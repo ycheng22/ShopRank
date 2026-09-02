@@ -171,4 +171,5 @@ The pipeline's automated mining mined 292 hard negatives (S: 53, C: 69, I: 170) 
 ## 7. Known Limitations
 
 1. **Cloud Run CPU Reranking**: Full cross-encoder reranking requires ~59s on basic CPU containers. As recorded in [docs/DECISIONS.md](file:///d:/Github_Clones/ShopRank/docs/DECISIONS.md), production deployments route free-form search through Hybrid retrieval (364ms) and reserve Cross-Encoder reranking for cached responses or ONNX int8 acceleration.
-2. **Machine-Translated Non-English Queries**: Chinese and French query sets are synthetically translated via DeepSeek / Qwen and serve specifically for cross-lingual recall evaluation.
+2. **Hardware Fallback on Cloud Run (BM25)**: Because large model weights and PyTorch dependencies exceed the strict 1Gi memory limits of the free-tier Cloud Run container, live free-form search in the Cloud UI automatically degrades to PostgreSQL BM25-only retrieval. Full Dense and Cross-Encoder capabilities remain fully supported when running locally or via the zero-latency demo presets.
+3. **Machine-Translated Non-English Queries**: Chinese and French query sets are synthetically translated via DeepSeek / Qwen and serve specifically for cross-lingual recall evaluation.
