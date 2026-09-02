@@ -189,7 +189,7 @@ async def search_freeform(
         res = await search(Query(text=req.query), req.config, db_url=settings.database_url)
         degraded_to_bm25 = False
     except Exception as e:
-        if isinstance(e, asyncpg.PostgresError) or isinstance(e, HTTPException):
+        if isinstance(e, (asyncpg.PostgresError, HTTPException)):
             raise
         logger.warning(f"Inference failed (missing torch/model), degrading to BM25: {e}")
         req.config.use_dense = False
