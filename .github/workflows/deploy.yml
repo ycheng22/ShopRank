@@ -32,6 +32,9 @@ jobs:
   deploy:
     needs: lint-and-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
     steps:
     - uses: actions/checkout@v4
     
