@@ -83,6 +83,11 @@ export class AppComponent implements OnInit {
     this.searchQuery = example.query;
     this.locale = example.locale;
     
+    // If dense was disabled solely due to live free-form search degradation, restore it for presets
+    if (this.degradedMessage && !this.useDense) {
+      this.useDense = true;
+    }
+    
     this.isSearching = true;
     this.quotaExhausted = false;
     this.demoModeMessage = '';
@@ -90,12 +95,13 @@ export class AppComponent implements OnInit {
     this.degradedMessage = '';
     this.expandedRow = null;
     
+    const effectiveFusion = !this.useDense ? 'none' : (this.fusionMethod === 'none' ? 'rrf' : this.fusionMethod);
     const params = {
       q: this.searchQuery,
       locale: this.locale,
       use_dense: this.useDense,
       use_rerank: this.useRerank,
-      fusion_method: this.fusionMethod
+      fusion_method: effectiveFusion
     };
     
     this.http.get<SearchResponse>(`${environment.apiBaseUrl}/api/search`, { params }).subscribe({
@@ -106,7 +112,11 @@ export class AppComponent implements OnInit {
       },
       error: (err) => {
         this.isSearching = false;
-        if (err.error && err.error.is_preset_error) {
+        const detail = err.error?.detail;
+        if (detail && detail.is_preset_error) {
+           this.presetError = detail.error;
+           this.results = [];
+        } else if (err.error && err.error.is_preset_error) {
            this.presetError = err.error.error;
            this.results = [];
         } else {

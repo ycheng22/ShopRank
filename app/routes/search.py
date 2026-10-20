@@ -87,12 +87,17 @@ class SearchRequest(BaseModel):
 
 
 def get_config_hash(config: ShopRankPipelineConfig) -> str:
+    # When use_dense is False, BM25 is the only retriever and no fusion occurs.
+    # When use_dense is True and fusion_method is "none", hybrid fusion defaults to "rrf".
+    fusion = "none" if not config.use_dense else (
+        "rrf" if config.fusion_method == "none" else config.fusion_method
+    )
     d: dict[str, Any] = {
         "use_dense": config.use_dense,
         "use_rerank": config.use_rerank,
-        "fusion_method": config.fusion_method,
+        "fusion_method": fusion,
     }
-    if config.fusion_method == "weighted":
+    if fusion == "weighted":
         d["fusion_weights"] = config.fusion_weights
 
     s = json.dumps(d, sort_keys=True)
