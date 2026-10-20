@@ -46,7 +46,7 @@ export class AppComponent implements OnInit {
   fusionMethod = signal<'RRF' | 'Weighted'>('RRF');
 
   // Explainability drawer open states
-  expandedAsins = signal<Set<string>>(new Set(['B07Z5YMPFM']));
+  expandedAsins = signal<Set<string>>(new Set());
 
   // All 8 Curated Presets
   readonly presets: PresetBenchmark[] = BENCHMARK_PRESETS;
@@ -73,6 +73,7 @@ export class AppComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    this.autoExpandTopResult();
     // Attempt to warm up / fetch the initial preset from live API
     this.fetchPresetFromApi(this.activePreset());
   }
@@ -209,10 +210,7 @@ export class AppComponent implements OnInit {
     this.presetError.set('');
     this.degradedMessage.set('');
 
-    if (preset.docs.length > 0) {
-      this.expandedAsins.set(new Set([preset.docs[0].asin]));
-    }
-
+    this.autoExpandTopResult();
     this.fetchPresetFromApi(preset);
   }
 
@@ -233,6 +231,7 @@ export class AppComponent implements OnInit {
         this.isSearching.set(false);
         this.liveHits.set(res.hits || null);
         this.liveTotalFound.set(res.total_found || null);
+        this.autoExpandTopResult();
       },
       error: (err) => {
         this.isSearching.set(false);
@@ -247,6 +246,7 @@ export class AppComponent implements OnInit {
           this.liveHits.set(null);
           this.liveTotalFound.set(preset.totalHits);
         }
+        this.autoExpandTopResult();
       }
     });
   }
@@ -311,6 +311,7 @@ export class AppComponent implements OnInit {
             this.pipelineRerank.set(false);
           }
         }
+        this.autoExpandTopResult();
       },
       error: (err) => {
         this.isSearching.set(false);
@@ -349,7 +350,18 @@ export class AppComponent implements OnInit {
   private refreshCurrentQuery(): void {
     if (this.activePreset().query === this.searchControl.value) {
       this.fetchPresetFromApi(this.activePreset());
+    } else {
+      this.autoExpandTopResult();
     }
+  }
+
+  autoExpandTopResult(): void {
+    queueMicrotask(() => {
+      const results = this.rankedResults();
+      if (results && results.length > 0) {
+        this.expandedAsins.set(new Set([results[0].asin]));
+      }
+    });
   }
 
   isExpanded(asin: string): boolean {
