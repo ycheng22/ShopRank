@@ -5,9 +5,6 @@
     <div>
       <div class="flex items-center gap-2.5">
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">ShopRank</h1>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-blue-600 text-white tracking-wide">
-          P1
-        </span>
       </div>
       <p class="text-sm text-slate-500 mt-1">Explainable E-commerce Search & Retrieval Benchmarks</p>
     </div>
@@ -571,6 +568,141 @@
           </p>
         </div>
 
+        <!-- Frontier-Style Benchmark Graph: Section 1 -->
+        <div class="bg-slate-50/70 border border-slate-200/90 rounded-xl p-5 mb-5 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">5-Stage Retrieval Quality Progression</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Progression across lexical, semantic vector, consensus fusion, and neural cross-encoder stages</p>
+            </div>
+            
+            <!-- Legend and Delta Callout -->
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-xs bg-indigo-600 inline-block"></span>
+                <span>NDCG@10</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-xs bg-emerald-600 inline-block"></span>
+                <span>Recall@50</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-medium text-slate-500">
+                <span class="w-4 border-t-2 border-dashed border-slate-400 inline-block"></span>
+                <span>BM25 Baseline</span>
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                +39.2% Peak Lift
+              </span>
+            </div>
+          </div>
+
+          <div class="w-full overflow-x-auto">
+            <svg viewBox="0 0 780 320" class="w-full min-w-[700px] h-auto select-none font-sans" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="ablationIndigo" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#4f46e5"/>
+                  <stop offset="100%" stop-color="#3730a3"/>
+                </linearGradient>
+                <linearGradient id="ablationEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#047857"/>
+                </linearGradient>
+                <linearGradient id="ablationPeak" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#4338ca"/>
+                  <stop offset="100%" stop-color="#1e1b4b"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Grid Lines -->
+              <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3">
+                <line x1="210" y1="20" x2="210" y2="280" />
+                <line x1="344" y1="20" x2="344" y2="280" />
+                <line x1="478" y1="20" x2="478" y2="280" />
+                <line x1="612" y1="20" x2="612" y2="280" />
+                <line x1="679" y1="20" x2="679" y2="280" />
+              </g>
+
+              <!-- BM25 Baseline Reference Line -->
+              <line x1="490" y1="20" x2="490" y2="280" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" />
+              <text x="495" y="16" fill="#64748b" font-size="10" font-weight="600" font-family="monospace">Baseline 0.4174</text>
+
+              <!-- Stage 1: BM25 Baseline -->
+              <g transform="translate(0, 30)">
+                <text x="195" y="22" text-anchor="end" fill="#1e293b" font-size="12" font-weight="600">BM25 Baseline</text>
+                <text x="195" y="36" text-anchor="end" fill="#64748b" font-size="10">Lexical match</text>
+                <rect x="210" y="8" width="280" height="16" rx="3" fill="url(#ablationIndigo)" />
+                <text x="500" y="21" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.4174</text>
+                <rect x="210" y="28" width="342" height="16" rx="3" fill="url(#ablationEmerald)" />
+                <text x="562" y="41" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.5097</text>
+                <rect x="685" y="15" width="80" height="22" rx="11" fill="#f1f5f9" stroke="#cbd5e1" />
+                <text x="725" y="30" text-anchor="middle" fill="#475569" font-size="10" font-weight="700">Baseline</text>
+              </g>
+
+              <!-- Stage 2: + Dense (BGE-M3 768d) -->
+              <g transform="translate(0, 80)">
+                <text x="195" y="22" text-anchor="end" fill="#1e293b" font-size="12" font-weight="600">+ Dense (BGE-M3)</text>
+                <text x="195" y="36" text-anchor="end" fill="#64748b" font-size="10">pgvector HNSW (768d)</text>
+                <rect x="210" y="8" width="331" height="16" rx="3" fill="url(#ablationIndigo)" />
+                <text x="551" y="21" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.4937</text>
+                <rect x="210" y="28" width="426" height="16" rx="3" fill="url(#ablationEmerald)" />
+                <text x="646" y="41" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.6350</text>
+                <rect x="685" y="15" width="80" height="22" rx="11" fill="#ecfdf5" stroke="#a7f3d0" />
+                <text x="725" y="30" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">+18.3%</text>
+              </g>
+
+              <!-- Stage 3: + Hybrid (RRF k=60) -->
+              <g transform="translate(0, 130)">
+                <text x="195" y="22" text-anchor="end" fill="#1e293b" font-size="12" font-weight="600">+ Hybrid (RRF k=60)</text>
+                <text x="195" y="36" text-anchor="end" fill="#64748b" font-size="10">Rank consensus</text>
+                <rect x="210" y="8" width="345" height="16" rx="3" fill="url(#ablationIndigo)" />
+                <text x="565" y="21" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.5132</text>
+                <rect x="210" y="28" width="424" height="16" rx="3" fill="url(#ablationEmerald)" />
+                <text x="644" y="41" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.6323</text>
+                <rect x="685" y="15" width="80" height="22" rx="11" fill="#ecfdf5" stroke="#a7f3d0" />
+                <text x="725" y="30" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">+23.0%</text>
+              </g>
+
+              <!-- Stage 4: + Weighted Fusion -->
+              <g transform="translate(0, 180)">
+                <text x="195" y="22" text-anchor="end" fill="#1e293b" font-size="12" font-weight="600">+ Weighted Fusion</text>
+                <text x="195" y="36" text-anchor="end" fill="#64748b" font-size="10">Linear normalized</text>
+                <rect x="210" y="8" width="388" height="16" rx="3" fill="url(#ablationIndigo)" />
+                <text x="608" y="21" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.5777</text>
+                <rect x="210" y="28" width="377" height="16" rx="3" fill="url(#ablationEmerald)" />
+                <text x="597" y="41" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.5617</text>
+                <rect x="685" y="15" width="80" height="22" rx="11" fill="#ecfdf5" stroke="#a7f3d0" />
+                <text x="725" y="30" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">+38.4%</text>
+              </g>
+
+              <!-- Stage 5: + Cross-Encoder Rerank (Peak) -->
+              <g transform="translate(0, 230)">
+                <text x="195" y="22" text-anchor="end" fill="#1e293b" font-size="12" font-weight="700">+ Cross-Encoder Rerank</text>
+                <text x="195" y="36" text-anchor="end" fill="#4338ca" font-size="10" font-weight="600">bge-reranker-v2 (Top-30)</text>
+                <rect x="210" y="8" width="390" height="16" rx="3" fill="url(#ablationPeak)" stroke="#312e81" stroke-width="1" />
+                <text x="610" y="21" fill="#1e293b" font-size="11" font-weight="800" font-family="monospace">0.5810</text>
+                <rect x="210" y="28" width="383" height="16" rx="3" fill="url(#ablationEmerald)" />
+                <text x="603" y="41" fill="#1e293b" font-size="11" font-weight="700" font-family="monospace">0.5706</text>
+                <rect x="685" y="15" width="80" height="22" rx="11" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" />
+                <text x="725" y="30" text-anchor="middle" fill="#15803d" font-size="10" font-weight="800">+39.2% ★</text>
+              </g>
+
+              <!-- X-Axis Scale -->
+              <g transform="translate(0, 285)" font-size="10" fill="#64748b" font-family="monospace">
+                <line x1="210" y1="0" x2="679" y2="0" stroke="#cbd5e1" stroke-width="1" />
+                <text x="210" y="14" text-anchor="middle">0.0</text>
+                <text x="344" y="14" text-anchor="middle">0.2</text>
+                <text x="478" y="14" text-anchor="middle">0.4</text>
+                <text x="612" y="14" text-anchor="middle">0.6</text>
+                <text x="679" y="14" text-anchor="middle">0.7</text>
+                <text x="444" y="28" text-anchor="middle" font-sans font-weight="500" fill="#94a3b8">Metric Score Scale (0.00 – 0.70)</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border border-slate-200 rounded-md">
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
@@ -622,6 +754,145 @@
           </p>
         </div>
 
+        <!-- Frontier-Style Benchmark Graph: Section 2 -->
+        <div class="bg-slate-50/70 border border-slate-200/90 rounded-xl p-5 mb-5 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Cross-Lingual Zero-Shot Retrieval Across 3 Locales</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Performance of English, Chinese, and French queries evaluated against the identical English catalog</p>
+            </div>
+            
+            <!-- Legend and Highlight Pill -->
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-xs bg-slate-400 inline-block"></span>
+                <span>BM25</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-xs bg-blue-600 inline-block"></span>
+                <span>Dense (BGE-M3)</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-xs bg-indigo-600 inline-block"></span>
+                <span>Hybrid (RRF)</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-xs bg-emerald-600 inline-block"></span>
+                <span>Hybrid + Rerank</span>
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                23.6x Chinese Lift
+              </span>
+            </div>
+          </div>
+
+          <div class="w-full overflow-x-auto">
+            <svg viewBox="0 0 780 290" class="w-full min-w-[700px] h-auto select-none font-sans" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="clBM25" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#94a3b8"/>
+                  <stop offset="100%" stop-color="#64748b"/>
+                </linearGradient>
+                <linearGradient id="clDense" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#3b82f6"/>
+                  <stop offset="100%" stop-color="#1d4ed8"/>
+                </linearGradient>
+                <linearGradient id="clHybrid" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#6366f1"/>
+                  <stop offset="100%" stop-color="#4338ca"/>
+                </linearGradient>
+                <linearGradient id="clRerank" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#047857"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Y-Axis Grid Lines & Labels (0.0 to 0.6) -->
+              <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3">
+                <line x1="50" y1="45" x2="760" y2="45" />
+                <line x1="50" y1="74" x2="760" y2="74" />
+                <line x1="50" y1="103" x2="760" y2="103" />
+                <line x1="50" y1="132" x2="760" y2="132" />
+                <line x1="50" y1="161" x2="760" y2="161" />
+                <line x1="50" y1="190" x2="760" y2="190" />
+              </g>
+              <line x1="50" y1="219" x2="760" y2="219" stroke="#cbd5e1" stroke-width="1.5" />
+
+              <g font-size="10" font-family="monospace" fill="#64748b" text-anchor="end">
+                <text x="42" y="49">0.60</text>
+                <text x="42" y="78">0.50</text>
+                <text x="42" y="107">0.40</text>
+                <text x="42" y="136">0.30</text>
+                <text x="42" y="165">0.20</text>
+                <text x="42" y="194">0.10</text>
+                <text x="42" y="223">0.00</text>
+              </g>
+
+              <!-- Cluster 1: English (Native) -->
+              <g>
+                <rect x="110" y="98" width="22" height="121" rx="3" fill="url(#clBM25)" />
+                <text x="121" y="92" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#475569">0.417</text>
+
+                <rect x="138" y="76" width="22" height="143" rx="3" fill="url(#clDense)" />
+                <text x="149" y="70" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#1d4ed8">0.494</text>
+
+                <rect x="166" y="70" width="22" height="149" rx="3" fill="url(#clHybrid)" />
+                <text x="177" y="64" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#4338ca">0.513</text>
+
+                <rect x="194" y="50" width="22" height="169" rx="3" fill="url(#clRerank)" />
+                <text x="205" y="44" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#047857">0.581</text>
+
+                <text x="163" y="242" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">English (us)</text>
+                <text x="163" y="258" text-anchor="middle" font-size="10" fill="#64748b">Native Catalog Baseline</text>
+              </g>
+
+              <!-- Cluster 2: Chinese (Cross-lingual) -->
+              <g>
+                <!-- Callout Banner for 23.6x lift -->
+                <rect x="340" y="20" width="160" height="26" rx="6" fill="#eff6ff" stroke="#93c5fd" />
+                <text x="420" y="37" text-anchor="middle" font-size="10" font-weight="700" fill="#1d4ed8">23.6x Gain: 0.016 → 0.382</text>
+                <path d="M 420 46 L 420 54" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="2 2" />
+
+                <rect x="350" y="214" width="22" height="5" rx="1" fill="#f43f5e" />
+                <text x="361" y="208" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#e11d48">0.016</text>
+
+                <rect x="378" y="132" width="22" height="87" rx="3" fill="url(#clDense)" />
+                <text x="389" y="126" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#1d4ed8">0.301</text>
+
+                <rect x="406" y="132" width="22" height="87" rx="3" fill="url(#clHybrid)" />
+                <text x="417" y="126" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#4338ca">0.300</text>
+
+                <rect x="434" y="108" width="22" height="111" rx="3" fill="url(#clRerank)" />
+                <text x="445" y="102" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#047857">0.382</text>
+
+                <text x="403" y="242" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">Chinese (zh)</text>
+                <text x="403" y="258" text-anchor="middle" font-size="10" fill="#64748b">Cross-Lingual Retrieval</text>
+              </g>
+
+              <!-- Cluster 3: French (Cross-lingual) -->
+              <g>
+                <rect x="590" y="191" width="22" height="28" rx="2" fill="url(#clBM25)" />
+                <text x="601" y="185" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#475569">0.098</text>
+
+                <rect x="618" y="115" width="22" height="104" rx="3" fill="url(#clDense)" />
+                <text x="629" y="109" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#1d4ed8">0.359</text>
+
+                <rect x="646" y="140" width="22" height="79" rx="3" fill="url(#clHybrid)" />
+                <text x="657" y="134" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#4338ca">0.271</text>
+
+                <rect x="674" y="103" width="22" height="116" rx="3" fill="url(#clRerank)" />
+                <text x="685" y="97" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#047857">0.398</text>
+
+                <text x="643" y="242" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">French (fr)</text>
+                <text x="643" y="258" text-anchor="middle" font-size="10" fill="#64748b">Cross-Lingual Retrieval</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border border-slate-200 rounded-md">
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold font-mono-tabular">
@@ -661,6 +932,103 @@
           </p>
         </div>
 
+        <!-- Frontier-Style Benchmark Graph: Section 3 -->
+        <div class="bg-slate-50/70 border border-slate-200/90 rounded-xl p-5 mb-5 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Matryoshka Truncation: Quality Retention vs Storage Quota</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Truncating BGE-M3 from 1024d to 768d saves 68 MB and filters noise, shielding against Neon's 500 MB write-lock</p>
+            </div>
+            
+            <!-- Pareto Optimum Badge -->
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              Pareto Frontier: 768d Selected (+0.0007 NDCG, -68 MB Storage)
+            </span>
+          </div>
+
+          <div class="w-full overflow-x-auto">
+            <svg viewBox="0 0 780 230" class="w-full min-w-[700px] h-auto select-none font-sans" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="dimGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#047857"/>
+                </linearGradient>
+                <linearGradient id="dimBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#64748b"/>
+                  <stop offset="100%" stop-color="#475569"/>
+                </linearGradient>
+                <linearGradient id="dimDanger" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#f59e0b"/>
+                  <stop offset="100%" stop-color="#d97706"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Panel 1: NDCG@10 Accuracy -->
+              <g transform="translate(10, 10)">
+                <text x="0" y="16" font-size="12" font-weight="700" fill="#1e293b">1. Retrieval Accuracy (NDCG@10)</text>
+                <text x="0" y="30" font-size="10" fill="#64748b">Matryoshka Representation Quality</text>
+
+                <!-- 1024d: 0.5172 -->
+                <text x="80" y="62" font-size="11" font-weight="600" fill="#334155" text-anchor="end">1024d Native</text>
+                <rect x="90" y="48" width="190" height="20" rx="3" fill="url(#dimBlue)" />
+                <text x="290" y="63" font-size="11" font-weight="700" font-family="monospace" fill="#1e293b">0.5172</text>
+
+                <!-- 768d: 0.5179 (Peak) -->
+                <text x="80" y="102" font-size="11" font-weight="700" fill="#047857" text-anchor="end">768d (Chosen)</text>
+                <rect x="90" y="88" width="192" height="20" rx="3" fill="url(#dimGreen)" stroke="#065f46" stroke-width="1.5" />
+                <text x="290" y="103" font-size="11" font-weight="800" font-family="monospace" fill="#047857">0.5179 ★</text>
+                <text x="350" y="103" font-size="9" font-weight="700" fill="#059669">(+0.0007 Gain)</text>
+
+                <!-- 512d: 0.5119 -->
+                <text x="80" y="142" font-size="11" font-weight="600" fill="#64748b" text-anchor="end">512d Heavy</text>
+                <rect x="90" y="128" width="175" height="20" rx="3" fill="#cbd5e1" />
+                <text x="275" y="143" font-size="11" font-weight="700" font-family="monospace" fill="#64748b">0.5119</text>
+                <text x="325" y="143" font-size="9" fill="#dc2626">(-0.0060 Loss)</text>
+              </g>
+
+              <!-- Divider -->
+              <line x1="410" y1="20" x2="410" y2="185" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 4" />
+
+              <!-- Panel 2: PostgreSQL Disk Usage vs 500 MB Limit -->
+              <g transform="translate(430, 10)">
+                <text x="0" y="16" font-size="12" font-weight="700" fill="#1e293b">2. PostgreSQL Vector Size vs 500 MB Quota</text>
+                <text x="0" y="30" font-size="10" fill="#64748b">Neon Serverless Storage Limit (Reject-writes threshold)</text>
+
+                <!-- Quota Red Line (at 500MB) -->
+                <line x1="290" y1="40" x2="290" y2="165" stroke="#ef4444" stroke-width="2" stroke-dasharray="3 3" />
+                <text x="290" y="36" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">500 MB Hard Limit</text>
+
+                <!-- 1024d: 486 MB (Danger: 97.2%) -->
+                <text x="70" y="62" font-size="11" font-weight="600" fill="#334155" text-anchor="end">1024d</text>
+                <rect x="80" y="48" width="202" height="20" rx="3" fill="url(#dimDanger)" />
+                <text x="140" y="63" font-size="10" font-weight="700" fill="#ffffff">486 MB (97.2%)</text>
+                <text x="295" y="63" font-size="9" font-weight="700" fill="#b45309">⚠️ Risk</text>
+
+                <!-- 768d: 418 MB (Safe: 83.6%) -->
+                <text x="70" y="102" font-size="11" font-weight="700" fill="#047857" text-anchor="end">768d</text>
+                <rect x="80" y="88" width="174" height="20" rx="3" fill="url(#dimGreen)" />
+                <text x="135" y="103" font-size="10" font-weight="700" fill="#ffffff">418 MB (83.6%)</text>
+                <text x="265" y="103" font-size="9" font-weight="700" fill="#047857">✓ 82 MB Buffer</text>
+
+                <!-- 512d: 312 MB (Safe: 62.4%) -->
+                <text x="70" y="142" font-size="11" font-weight="600" fill="#64748b" text-anchor="end">512d</text>
+                <rect x="80" y="128" width="130" height="20" rx="3" fill="url(#dimBlue)" />
+                <text x="110" y="143" font-size="10" font-weight="700" fill="#ffffff">312 MB (62.4%)</text>
+                <text x="220" y="143" font-size="9" fill="#64748b">Low capacity</text>
+              </g>
+
+              <!-- Footer Annotation -->
+              <rect x="10" y="185" width="760" height="32" rx="6" fill="#f8fafc" stroke="#e2e8f0" />
+              <text x="390" y="205" text-anchor="middle" font-size="11" fill="#475569">
+                <tspan font-weight="700" fill="#0f172a">Engineering Decision:</tspan> 768d Matryoshka is chosen because it yields <tspan font-weight="700" fill="#059669">+0.0007 higher NDCG@10</tspan> than full 1024d while creating an essential <tspan font-weight="700" fill="#059669">82 MB safety margin</tspan> against Neon's hard storage suspension.
+              </text>
+            </svg>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border border-slate-200 rounded-md">
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold font-mono-tabular">
@@ -698,6 +1066,115 @@
           <p class="text-xs text-slate-500 mt-0.5">
             Reciprocal Rank Fusion smoothing parameter sensitivity curve: <code>RRF = &Sigma; 1/(k + rank)</code>.
           </p>
+        </div>
+
+        <!-- Frontier-Style Benchmark Graph: Section 4 -->
+        <div class="bg-slate-50/70 border border-slate-200/90 rounded-xl p-5 mb-5 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">RRF Smoothing Parameter Sensitivity (k &isin; [10, 60, 200])</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Mathematical consensus curve balancing lexical precision vs semantic recall: RRF(d) = &Sigma; 1/(k + rank)</p>
+            </div>
+            
+            <!-- Legend and Optimal Badge -->
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span>
+                <span>NDCG@10</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-medium text-slate-600">
+                <span class="w-3 h-3 rounded-full bg-violet-600 inline-block"></span>
+                <span>MRR@10</span>
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 text-violet-800 border border-violet-300">
+                Peak Consensus: k=60
+              </span>
+            </div>
+          </div>
+
+          <div class="w-full overflow-x-auto">
+            <svg viewBox="0 0 780 260" class="w-full min-w-[700px] h-auto select-none font-sans" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="rrfIndigoArea" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0"/>
+                </linearGradient>
+                <linearGradient id="rrfVioletArea" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Optimal Zone Background Column (k=60) -->
+              <rect x="300" y="20" width="180" height="150" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" />
+              <text x="390" y="38" text-anchor="middle" font-size="10" font-weight="700" fill="#1d4ed8">★ Optimal Equilibrium Zone</text>
+
+              <!-- Grid & Baseline Lines -->
+              <line x1="80" y1="70" x2="700" y2="70" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3" />
+              <line x1="80" y1="120" x2="700" y2="120" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3" />
+              <line x1="80" y1="170" x2="700" y2="170" stroke="#cbd5e1" stroke-width="1.5" />
+
+              <!-- MRR@10 Curve (Violet) (Values: k10=0.7431, k60=0.7463, k200=0.7449) -->
+              <path d="M 170 78 Q 280 60 390 60 T 610 68" fill="none" stroke="#7c3aed" stroke-width="3" />
+              <path d="M 170 78 Q 280 60 390 60 T 610 68 L 610 170 L 170 170 Z" fill="url(#rrfVioletArea)" />
+
+              <!-- NDCG@10 Curve (Indigo) (Values: k10=0.5108, k60=0.5132, k200=0.5118) -->
+              <path d="M 170 130 Q 280 105 390 105 T 610 120" fill="none" stroke="#4f46e5" stroke-width="3" />
+              <path d="M 170 130 Q 280 105 390 105 T 610 120 L 610 170 L 170 170 Z" fill="url(#rrfIndigoArea)" />
+
+              <!-- Point Markers for k=10 -->
+              <circle cx="170" cy="78" r="5" fill="#7c3aed" stroke="#ffffff" stroke-width="2" />
+              <text x="170" y="72" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#6d28d9">0.7431 MRR</text>
+
+              <circle cx="170" cy="130" r="5" fill="#4f46e5" stroke="#ffffff" stroke-width="2" />
+              <text x="170" y="148" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#4338ca">0.5108 NDCG</text>
+
+              <!-- Point Markers for k=60 (Peak) -->
+              <circle cx="390" cy="60" r="6" fill="#7c3aed" stroke="#ffffff" stroke-width="2.5" />
+              <text x="390" y="52" text-anchor="middle" font-size="11" font-weight="800" font-family="monospace" fill="#5b21b6">0.7463 MRR (Peak)</text>
+
+              <circle cx="390" cy="105" r="6" fill="#4f46e5" stroke="#ffffff" stroke-width="2.5" />
+              <text x="390" y="123" text-anchor="middle" font-size="11" font-weight="800" font-family="monospace" fill="#312e81">0.5132 NDCG (Peak)</text>
+
+              <!-- Point Markers for k=200 -->
+              <circle cx="610" cy="68" r="5" fill="#7c3aed" stroke="#ffffff" stroke-width="2" />
+              <text x="610" y="62" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#6d28d9">0.7449 MRR</text>
+
+              <circle cx="610" cy="120" r="5" fill="#4f46e5" stroke="#ffffff" stroke-width="2" />
+              <text x="610" y="138" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#4338ca">0.5118 NDCG</text>
+
+              <!-- X-Axis Labels & Behavior Diagnostic Cards -->
+              <!-- k=10 -->
+              <g transform="translate(85, 182)">
+                <rect x="0" y="0" width="170" height="66" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+                <text x="85" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">k = 10</text>
+                <text x="85" y="34" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">High Top-Rank Bias</text>
+                <text x="85" y="48" text-anchor="middle" font-size="9" fill="#64748b">Overweights rank #1 disagreement</text>
+                <text x="85" y="58" text-anchor="middle" font-size="9" fill="#64748b">between lexical &amp; dense lists</text>
+              </g>
+
+              <!-- k=60 -->
+              <g transform="translate(305, 182)">
+                <rect x="0" y="0" width="170" height="66" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+                <text x="85" y="18" text-anchor="middle" font-size="12" font-weight="800" fill="#1d4ed8">k = 60 (Standard)</text>
+                <text x="85" y="34" text-anchor="middle" font-size="10" font-weight="700" fill="#059669">Optimal Consensus</text>
+                <text x="85" y="48" text-anchor="middle" font-size="9" fill="#334155">Cormack et al. (2009) equilibrium</text>
+                <text x="85" y="58" text-anchor="middle" font-size="9" fill="#334155">Maximizes both NDCG and MRR</text>
+              </g>
+
+              <!-- k=200 -->
+              <g transform="translate(525, 182)">
+                <rect x="0" y="0" width="170" height="66" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+                <text x="85" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">k = 200</text>
+                <text x="85" y="34" text-anchor="middle" font-size="10" font-weight="600" fill="#d97706">Low Rank Decay</text>
+                <text x="85" y="48" text-anchor="middle" font-size="9" fill="#64748b">Flattens score gradient</text>
+                <text x="85" y="58" text-anchor="middle" font-size="9" fill="#64748b">Noisy tail ranks bleed in</text>
+              </g>
+            </svg>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
