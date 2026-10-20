@@ -40,13 +40,13 @@ coverage.xml
 .ruff_cache/
 
 # Data, embeddings, caches & model weights (per AGENTS.md rule)
-data/
+/data/
 *.parquet
 *.arrow
 *.bin
 *.pt
 *.safetensors
-models/
+/models/
 weights/
 
 # IDE / Editor configuration

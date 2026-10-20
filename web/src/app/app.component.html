@@ -1,134 +1,844 @@
-<div class="container">
-  <header>
-    <h1>ShopRank <span class="badge">P1</span></h1>
-    <p>Explainable E-commerce Search</p>
+<div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Top Header -->
+  <header class="pb-5 mb-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">ShopRank</h1>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-blue-600 text-white tracking-wide">
+          P1
+        </span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">Explainable E-commerce Search & Retrieval Benchmarks</p>
+    </div>
+
+    <!-- Telemetry metadata on right -->
+    <div class="flex items-center gap-3 text-xs text-slate-500 font-mono-tabular">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-700">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+        Amazon ESCI Index (29.8k Items)
+      </span>
+      <span class="hidden sm:inline text-slate-300">|</span>
+      <span class="hidden sm:inline text-slate-600">k=60 RRF</span>
+      <span class="hidden sm:inline text-slate-300">|</span>
+      <span class="hidden sm:inline text-slate-600">BGE-M3 (768d)</span>
+    </div>
   </header>
-  
-  <div class="demo-banner" *ngIf="presetError">
-    <p><strong>Error:</strong> {{ presetError }}</p>
-  </div>
-  
-  <div class="demo-banner info" *ngIf="demoModeMessage">
-    <p><strong>Demo Mode:</strong> {{ demoModeMessage }}</p>
-    <p>Try one of the <a href="#examples">preset examples</a> below.</p>
-  </div>
-  
-  <div class="demo-banner warning" *ngIf="quotaExhausted">
-    <p><strong>Quota Exhausted:</strong> Free-form API limit reached for today. Reranking has been disabled and results are degraded.</p>
-  </div>
 
-  <div class="demo-banner warning" *ngIf="degradedMessage">
-    <p><strong>Hardware Limitation:</strong> {{ degradedMessage }}</p>
-  </div>
+  <!-- Top Tab Navigation -->
+  <nav class="flex items-center gap-2 border-b border-slate-200 mb-6">
+    <button
+      type="button"
+      (click)="activeTab.set('search')"
+      [class]="activeTab() === 'search'
+        ? 'px-4 py-2.5 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition-colors cursor-pointer'
+        : 'px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors cursor-pointer flex items-center gap-2'">
+      <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+      </svg>
+      <span>Interactive Search Explorer</span>
+    </button>
 
-  <section class="search-panel">
-    <div class="search-box">
-      <input type="text" [(ngModel)]="searchQuery" placeholder="Search products..." (keyup.enter)="onSearch()" />
-      <button (click)="onSearch()" [disabled]="isSearching">
-        {{ isSearching ? 'Searching...' : 'Search' }}
-      </button>
-    </div>
-    
-    <div class="config-panel">
-      <div class="config-group">
-        <label>API Key:</label>
-        <input type="password" [(ngModel)]="apiKey" placeholder="Leave blank for presets" />
-      </div>
-      <div class="config-group">
-        <label>Locale:</label>
-        <select [(ngModel)]="locale">
-          <option value="en">English</option>
-          <option value="zh">中文 (Chinese)</option>
-          <option value="fr">Français (French)</option>
-        </select>
-      </div>
-      <div class="config-group">
-        <label>Pipeline:</label>
-        <label class="checkbox">
-          <input type="checkbox" [(ngModel)]="useDense" /> Dense
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" [(ngModel)]="useRerank" [disabled]="quotaExhausted" /> Rerank
-        </label>
-      </div>
-      <div class="config-group">
-        <label>Fusion:</label>
-        <select [(ngModel)]="fusionMethod" [disabled]="!useDense">
-          <option value="none">None</option>
-          <option value="rrf">RRF</option>
-          <option value="weighted">Weighted</option>
-        </select>
-      </div>
-    </div>
-  </section>
+    <button
+      type="button"
+      (click)="activeTab.set('benchmarks')"
+      [class]="activeTab() === 'benchmarks'
+        ? 'px-4 py-2.5 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition-colors cursor-pointer'
+        : 'px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors cursor-pointer flex items-center gap-2'">
+      <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z" />
+      </svg>
+      <span>Architecture & Evaluation Benchmarks</span>
+    </button>
+  </nav>
 
-  <section class="examples-panel" id="examples">
-    <h3>Preset Examples (Zero Latency Cache)</h3>
-    <div class="examples-grid">
-      <button class="example-btn" *ngFor="let ex of examples" (click)="runPreset(ex)">
-        <strong>{{ ex.query }}</strong> ({{ ex.locale }})
-        <span class="desc">{{ ex.description }}</span>
-      </button>
-    </div>
-  </section>
-
-  <section class="results-panel">
-    <div class="results-header" *ngIf="results.length > 0">
-      <h3>Found {{ totalFound }} results</h3>
-    </div>
-    
-    <div class="result-list">
-      <div class="result-card" *ngFor="let hit of results; let i = index">
-        <div class="result-summary" (click)="toggleExpand(i)">
-          <div class="rank-badge">#{{ i + 1 }}</div>
-          <div class="product-info">
-            <h4 class="product-title">{{ hit.title || ('Product ' + hit.product_id) }}</h4>
-            <div class="product-meta">
-              <span class="product-asin">ID: {{ hit.product_id }}</span>
-              <span class="product-snippet" *ngIf="hit.description">{{ hit.description | slice:0:150 }}...</span>
-            </div>
-          </div>
-          <div class="scores-preview">
-            <span class="score-pill">Score: {{ hit.raw_score | number:'1.4-4' }}</span>
-          </div>
-          <div class="expand-icon">{{ expandedRow === i ? '▼' : '▶' }}</div>
+  <!-- ========================================== -->
+  <!-- TAB 1: INTERACTIVE SEARCH EXPLORER         -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'search') {
+    <main>
+      <!-- Alerts & Diagnostics Banners -->
+      @if (presetError()) {
+        <div class="mb-4 p-3.5 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+          </svg>
+          <span><strong>Error:</strong> {{ presetError() }}</span>
         </div>
+      }
+
+      @if (demoModeMessage()) {
+        <div class="mb-4 p-3.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-xs flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+            </svg>
+            <span><strong>Demo Mode:</strong> {{ demoModeMessage() }}</span>
+          </div>
+          <span class="text-slate-600">Explore one of the pre-computed presets below.</span>
+        </div>
+      }
+
+      @if (quotaExhausted()) {
+        <div class="mb-4 p-3.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+          <strong>Daily Quota Limit:</strong> Free-form API limit reached for today. Cross-encoder reranking has been temporarily disabled.
+        </div>
+      }
+
+      @if (degradedMessage()) {
+        <div class="mb-4 p-3.5 rounded-md bg-amber-50/90 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+          </svg>
+          <span><strong>Hardware Limitation:</strong> {{ degradedMessage() }}</span>
+        </div>
+      }
+
+      <!-- Search & Pipeline Control Panel -->
+      <section class="bg-slate-50/90 border border-slate-200/90 rounded-lg p-4 mb-7 shadow-xs">
         
-        <div class="result-detail" *ngIf="expandedRow === i">
-          <div class="full-product-info" *ngIf="hit.product_text">
-            <h4 class="detail-subtitle">Item Details</h4>
-            <div class="product-full-text" [innerHTML]="hit.product_text"></div>
+        <!-- Row 1: Search Input + Search Button -->
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <input
+              type="text"
+              [formControl]="searchControl"
+              (keydown.enter)="runSearch()"
+              placeholder="Search products in Amazon catalog..."
+              class="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 transition-all"
+            />
+            @if (searchControl.value) {
+              <button
+                type="button"
+                (click)="clearQuery()"
+                title="Clear query"
+                class="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            }
           </div>
 
-          <h4 class="detail-subtitle">Score Breakdown & Retrieval Provenance</h4>
-          <table class="explain-table">
-            <tr>
-              <th>Stage</th>
-              <th>Score</th>
-            </tr>
-            <tr>
-              <td>BM25 Exact Match</td>
-              <td>{{ hit.breakdown.bm25_score | number:'1.4-4' }}</td>
-            </tr>
-            <tr *ngIf="useDense">
-              <td>Dense Semantic Match</td>
-              <td>{{ hit.breakdown.dense_score | number:'1.4-4' }}</td>
-            </tr>
-            <tr *ngIf="useDense">
-              <td>Fused Score ({{ fusionMethod }})</td>
-              <td>{{ hit.breakdown.fused_score | number:'1.4-4' }}</td>
-            </tr>
-            <tr *ngIf="useRerank && hit.breakdown.rerank_score !== undefined">
-              <td>Cross-Encoder Rerank</td>
-              <td>{{ hit.breakdown.rerank_score | number:'1.4-4' }}</td>
-            </tr>
-            <tr *ngIf="useRerank && hit.breakdown.rank_before_rerank !== undefined">
-              <td>Rank before rerank</td>
-              <td>#{{ hit.breakdown.rank_before_rerank }}</td>
-            </tr>
+          <button
+            type="button"
+            (click)="runSearch()"
+            [disabled]="isSearching()"
+            class="h-10 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-emerald-400 text-white font-semibold text-sm transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-2">
+            @if (isSearching()) {
+              <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Searching...</span>
+            } @else {
+              <span>Search</span>
+            }
+          </button>
+        </div>
+
+        <!-- Row 2: Pipeline Configuration Bar -->
+        <div class="mt-3 px-3.5 py-2.5 bg-white border border-slate-200 rounded-md flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs">
+          
+          <!-- API Key -->
+          <div class="flex items-center gap-2">
+            <label for="api-key-input" class="font-medium text-slate-600 whitespace-nowrap">API Key:</label>
+            <input
+              id="api-key-input"
+              type="password"
+              [formControl]="apiKeyControl"
+              placeholder="Leave blank for presets"
+              class="w-40 sm:w-44 h-7 px-2 bg-white border border-slate-300 rounded text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600"
+            />
+          </div>
+
+          <div class="h-4 w-px bg-slate-200 hidden md:block"></div>
+
+          <!-- Locale -->
+          <div class="flex items-center gap-2">
+            <label for="locale-select" class="font-medium text-slate-600">Locale:</label>
+            <select
+              id="locale-select"
+              [value]="selectedLocale()"
+              (change)="onLocaleChange($event)"
+              class="h-7 px-2 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer">
+              <option value="en">English (en)</option>
+              <option value="zh">Chinese (zh)</option>
+              <option value="fr">French (fr)</option>
+            </select>
+          </div>
+
+          <div class="h-4 w-px bg-slate-200 hidden md:block"></div>
+
+          <!-- Pipeline Checkboxes -->
+          <div class="flex items-center gap-3">
+            <span class="font-medium text-slate-600">Pipeline:</span>
+            
+            <label class="inline-flex items-center gap-1.5 text-slate-800 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                [checked]="pipelineDense()"
+                (change)="toggleDense()"
+                class="w-3.5 h-3.5 rounded border-slate-300 cursor-pointer"
+              />
+              <span>Dense</span>
+            </label>
+
+            <label class="inline-flex items-center gap-1.5 text-slate-800 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                [checked]="pipelineRerank()"
+                [disabled]="quotaExhausted()"
+                (change)="toggleRerank()"
+                class="w-3.5 h-3.5 rounded border-slate-300 cursor-pointer"
+              />
+              <span>Rerank</span>
+            </label>
+          </div>
+
+          <div class="h-4 w-px bg-slate-200 hidden md:block"></div>
+
+          <!-- Fusion Method -->
+          <div class="flex items-center gap-2">
+            <label for="fusion-select" class="font-medium text-slate-600">Fusion:</label>
+            <select
+              id="fusion-select"
+              [value]="fusionMethod()"
+              [disabled]="!pipelineDense()"
+              (change)="onFusionChange($event)"
+              class="h-7 px-2 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer disabled:bg-slate-50 disabled:text-slate-400">
+              <option value="RRF">RRF (k=60)</option>
+              <option value="Weighted">Weighted (0.5 / 0.5)</option>
+            </select>
+          </div>
+
+          <!-- Active Pipeline Formula Summary -->
+          <div class="ml-auto hidden lg:flex items-center gap-1.5 text-[11px] text-slate-500 font-mono-tabular">
+            <span>Active:</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 font-medium">
+              {{ activePipelineLabel() }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preset Examples (Zero Latency Cache) -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-slate-900 tracking-tight">
+            Preset Examples (Zero Latency Cache)
+          </h2>
+          <span class="text-xs text-slate-500">
+            Click any query to evaluate multi-stage retrieval ranking & explainability
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          @for (preset of presets; track preset.id) {
+            <button
+              type="button"
+              (click)="selectPreset(preset)"
+              [class]="activePreset().id === preset.id
+                ? 'text-left p-3 rounded-md bg-blue-50/50 border border-blue-600 ring-1 ring-blue-600 shadow-2xs transition-all cursor-pointer flex flex-col justify-between'
+                : 'text-left p-3 rounded-md bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all cursor-pointer flex flex-col justify-between'">
+              
+              <div>
+                <div class="flex items-baseline justify-between gap-1.5">
+                  <span class="font-bold text-xs sm:text-[13px] text-slate-900 leading-snug truncate">
+                    {{ preset.query }}
+                  </span>
+                  <span class="font-mono-tabular text-[11px] text-slate-500 shrink-0">
+                    ({{ preset.locale }})
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-2.5 flex items-center justify-between">
+                <span class="text-[11px] text-slate-500 truncate">
+                  {{ preset.categoryNote }}
+                </span>
+                @if (activePreset().id === preset.id) {
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section>
+        <!-- Results Header Row -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
+          <div class="flex items-baseline gap-3">
+            <h2 class="text-base font-bold text-slate-900">
+              Found {{ displayTotalHits() }} results
+            </h2>
+            <span class="text-xs text-slate-500 font-mono-tabular">
+              Showing top {{ rankedResults().length }} candidates
+            </span>
+          </div>
+
+          <!-- Execution Telemetry -->
+          <div class="flex items-center gap-3 text-xs text-slate-500 font-mono-tabular">
+            <span>Latency: <strong class="text-slate-800">{{ totalLatencyMs() }}ms</strong></span>
+            <span class="text-slate-300">·</span>
+            <button
+              type="button"
+              (click)="toggleAllDrawers()"
+              class="text-blue-600 hover:text-blue-800 font-sans font-medium cursor-pointer">
+              {{ allExpanded() ? 'Collapse all details' : 'Expand all details' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Result Items List -->
+        <div class="space-y-2.5">
+          @for (item of rankedResults(); track item.asin; let idx = $index) {
+            <div 
+              [class]="isExpanded(item.asin)
+                ? 'rounded-lg border border-slate-300 bg-white shadow-xs transition-colors'
+                : 'rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors'">
+              
+              <!-- Main Result Row -->
+              <div 
+                (click)="toggleExpand(item.asin)"
+                class="p-3.5 sm:px-4 flex items-center justify-between gap-4 cursor-pointer select-none">
+                
+                <!-- Left: Dark Pill Rank Badge + Rank Delta -->
+                <div class="flex flex-col items-center gap-1 shrink-0">
+                  <span class="inline-flex items-center justify-center min-w-[36px] h-7 px-2 rounded-full bg-slate-900 text-white font-mono-tabular text-xs font-bold">
+                    #{{ idx + 1 }}
+                  </span>
+                  @if (item.rankDelta !== 0) {
+                    <span [class]="item.rankDelta > 0 
+                      ? 'font-mono-tabular text-[10px] font-semibold text-emerald-700' 
+                      : 'font-mono-tabular text-[10px] font-semibold text-amber-700'">
+                      {{ item.rankDelta > 0 ? '+' + item.rankDelta : item.rankDelta }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Center: Product Title + ID Badge + Truncated Snippet -->
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-bold text-slate-900 leading-snug truncate">
+                    {{ item.title }}
+                  </div>
+                  
+                  <div class="mt-1.5 flex items-center gap-2 text-xs text-slate-500 min-w-0">
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200/80 text-slate-700 font-mono-tabular text-[11px] font-medium shrink-0">
+                      ID: {{ item.asin }}
+                    </span>
+                    <span class="truncate text-slate-500">
+                      {{ item.snippet }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Right: Score Pill + Disclosure Arrow -->
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-800 font-mono-tabular text-xs font-medium">
+                    Score: {{ item.finalScore.toFixed(4) }}
+                  </span>
+
+                  <button
+                    type="button"
+                    [attr.aria-label]="'Toggle explainability details for ' + item.asin"
+                    class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-transform">
+                    <svg 
+                      class="w-3.5 h-3.5 transition-transform duration-150"
+                      [class.rotate-90]="isExpanded(item.asin)"
+                      viewBox="0 0 16 16" 
+                      fill="currentColor">
+                      <path d="M5.5 3.5L11.5 8L5.5 12.5V3.5Z" />
+                    </svg>
+                  </button>
+                </div>
+
+              </div>
+
+              <!-- Expandable Explainability Drawer -->
+              @if (isExpanded(item.asin)) {
+                <div class="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50/70 rounded-b-lg text-xs space-y-3">
+                  
+                  <!-- Stage-by-Stage Retrieval Telemetry Grid -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 font-mono-tabular">
+                    
+                    <!-- Stage 1: BM25 Lexical -->
+                    <div class="p-2.5 rounded bg-white border border-slate-200">
+                      <div class="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>STAGE 1: BM25 LEXICAL</span>
+                        <span class="font-semibold text-slate-700">Rank #{{ item.bm25Rank }}</span>
+                      </div>
+                      <div class="mt-1 text-sm font-bold text-slate-900">
+                        {{ item.bm25RawScore.toFixed(2) }} <span class="text-[11px] font-normal text-slate-400">raw</span>
+                      </div>
+                      <div class="mt-1 text-[11px] text-slate-500">
+                        1/(60 + {{ item.bm25Rank }}) = {{ (1 / (60 + item.bm25Rank)).toFixed(4) }}
+                      </div>
+                    </div>
+
+                    <!-- Stage 2: Dense Vector -->
+                    <div class="p-2.5 rounded bg-white border border-slate-200" [class.opacity-50]="!pipelineDense()">
+                      <div class="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>STAGE 2: DENSE VECTOR</span>
+                        <span class="font-semibold text-slate-700">
+                          {{ pipelineDense() ? 'Rank #' + item.denseRank : 'DISABLED' }}
+                        </span>
+                      </div>
+                      <div class="mt-1 text-sm font-bold text-slate-900">
+                        {{ pipelineDense() ? item.denseCosine.toFixed(4) : '—' }}
+                        <span class="text-[11px] font-normal text-slate-400">cosine</span>
+                      </div>
+                      <div class="mt-1 text-[11px] text-slate-500">
+                        @if (pipelineDense()) {
+                          1/(60 + {{ item.denseRank }}) = {{ (1 / (60 + item.denseRank)).toFixed(4) }}
+                        } @else {
+                          Not included in fusion
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Stage 3: Fusion Output -->
+                    <div class="p-2.5 rounded bg-white border border-slate-200">
+                      <div class="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>FUSION ({{ fusionMethod() }})</span>
+                        <span class="font-semibold text-blue-600">k=60</span>
+                      </div>
+                      <div class="mt-1 text-sm font-bold text-slate-900">
+                        {{ item.fusionScore.toFixed(4) }}
+                      </div>
+                      <div class="mt-1 text-[11px] text-slate-500 truncate">
+                        {{ item.formulaText }}
+                      </div>
+                    </div>
+
+                    <!-- Stage 4: Cross-Encoder Reranker -->
+                    <div class="p-2.5 rounded bg-white border border-slate-200" [class.opacity-50]="!pipelineRerank()">
+                      <div class="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>STAGE 3: RERANKER</span>
+                        <span class="font-semibold text-slate-700">
+                          {{ pipelineRerank() ? 'ACTIVE' : 'BYPASSED' }}
+                        </span>
+                      </div>
+                      <div class="mt-1 text-sm font-bold text-slate-900">
+                        {{ pipelineRerank() ? item.rerankLogit.toFixed(4) : '—' }}
+                        <span class="text-[11px] font-normal text-slate-400">logit/prob</span>
+                      </div>
+                      <div class="mt-1 text-[11px] text-slate-500">
+                        ESCI Label: <strong class="text-slate-800">{{ item.esciLabel }}</strong>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- Matched Terms & Engineering Diagnostic Note -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="text-slate-500 font-medium">Matched Signals:</span>
+                      @for (term of item.matchedTerms; track term) {
+                        <span class="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono-tabular text-[11px] text-slate-700">
+                          {{ term }}
+                        </span>
+                      }
+                      @if (item.matchedTerms.length === 0) {
+                        <span class="text-slate-400 italic">No lexical exact matches</span>
+                      }
+                    </div>
+                    <div class="text-slate-600">
+                      <span class="font-semibold text-slate-800">Diagnostic:</span> {{ item.explainNote }}
+                    </div>
+                  </div>
+
+                  <!-- Full Un-truncated Product Description -->
+                  <div class="p-3 rounded bg-white border border-slate-200/80 text-slate-600 leading-relaxed">
+                    <span class="font-semibold text-slate-800">Indexed Text ({{ item.category }}): </span>
+                    <span [innerHTML]="item.fullDescription"></span>
+                  </div>
+
+                </div>
+              }
+
+            </div>
+          }
+        </div>
+      </section>
+    </main>
+  }
+
+  <!-- ========================================== -->
+  <!-- TAB 2: ARCHITECTURE & EVALUATION BENCHMARKS-->
+  <!-- ========================================== -->
+  @if (activeTab() === 'benchmarks') {
+    <main class="space-y-10">
+      
+      <!-- Section 0: System Architecture Flowchart -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">System Architecture</h2>
+            <p class="text-xs text-slate-500">Multi-stage retrieval and edge-cached explanation pipeline</p>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 text-xs font-mono-tabular">
+            GCP Cloud Run + Neon PostgreSQL
+          </span>
+        </div>
+
+        <!-- Crisp Vector Flowchart -->
+        <div class="p-4 bg-slate-50/60 rounded-md border border-slate-200/70 overflow-x-auto">
+          <svg class="w-full min-w-[760px] h-auto" viewBox="0 0 860 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Box: User Query -->
+            <rect x="20" y="95" width="130" height="60" rx="6" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.5" />
+            <text x="85" y="122" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#0F172A" text-anchor="middle">User Query</text>
+            <text x="85" y="138" font-family="JetBrains Mono, monospace" font-size="10" fill="#64748B" text-anchor="middle">EN / ZH / FR</text>
+
+            <!-- Arrow: Query -> Gateway -->
+            <path d="M150 125 H195" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)" />
+
+            <!-- Diamond: Gateway -->
+            <polygon points="240,85 285,125 240,165 195,125" fill="#F8FAFC" stroke="#2563EB" stroke-width="1.5" />
+            <text x="240" y="123" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#1E293B" text-anchor="middle">Gateway</text>
+            <text x="240" y="136" font-family="JetBrains Mono, monospace" font-size="9" fill="#2563EB" text-anchor="middle">Router</text>
+
+            <!-- Arrow: Gateway -> Edge Cache -->
+            <path d="M240 85 V35 H330" stroke="#059669" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrow-emerald)" />
+            <text x="280" y="27" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#059669">Preset / Cache (GET)</text>
+
+            <!-- Box: Edge Cache -->
+            <rect x="330" y="10" width="180" height="50" rx="6" fill="#ECFDF5" stroke="#059669" stroke-width="1.5" />
+            <text x="420" y="32" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#065F46" text-anchor="middle">Edge Cache (Zero Latency)</text>
+            <text x="420" y="48" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#047857" text-anchor="middle">Cloudflare CDN + PostgreSQL demo_cache</text>
+
+            <!-- Arrow: Gateway -> Pipeline -->
+            <path d="M285 125 H330" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)" />
+            <text x="305" y="120" font-family="JetBrains Mono, monospace" font-size="9" fill="#64748B" text-anchor="middle">POST</text>
+
+            <!-- Container: Retrieval Layer -->
+            <rect x="330" y="80" width="180" height="150" rx="6" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4 4" />
+            <text x="420" y="98" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#475569" text-anchor="middle">1. DUAL-RETRIEVAL LAYER</text>
+
+            <!-- Box: BM25 -->
+            <rect x="345" y="110" width="150" height="45" rx="4" fill="#F8FAFC" stroke="#64748B" stroke-width="1.2" />
+            <text x="420" y="128" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#0F172A" text-anchor="middle">PostgreSQL BM25</text>
+            <text x="420" y="142" font-family="JetBrains Mono, monospace" font-size="9" fill="#64748B" text-anchor="middle">tsvector / GIN Index</text>
+
+            <!-- Box: Dense -->
+            <rect x="345" y="170" width="150" height="45" rx="4" fill="#F8FAFC" stroke="#2563EB" stroke-width="1.2" />
+            <text x="420" y="188" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#0F172A" text-anchor="middle">BGE-M3 Dense Vector</text>
+            <text x="420" y="202" font-family="JetBrains Mono, monospace" font-size="9" fill="#2563EB" text-anchor="middle">pgvector HNSW (768-dim)</text>
+
+            <!-- Arrows to Fusion -->
+            <path d="M495 132 H540" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)" />
+            <path d="M495 192 H540" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)" />
+
+            <!-- Box: 2. Rank Fusion -->
+            <rect x="540" y="130" width="130" height="65" rx="6" fill="#EFF6FF" stroke="#2563EB" stroke-width="1.5" />
+            <text x="605" y="152" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" fill="#1E40AF" text-anchor="middle">2. RANK FUSION</text>
+            <text x="605" y="168" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#0F172A" text-anchor="middle">RRF (k=60)</text>
+            <text x="605" y="183" font-family="JetBrains Mono, monospace" font-size="9" fill="#2563EB" text-anchor="middle">Top-100 Candidates</text>
+
+            <!-- Arrow: Fusion -> Reranker -->
+            <path d="M670 162 H705" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)" />
+
+            <!-- Box: 3. Cross-Encoder Reranker -->
+            <rect x="705" y="130" width="135" height="65" rx="6" fill="#F8FAFC" stroke="#7C3AED" stroke-width="1.5" />
+            <text x="772" y="152" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" fill="#6D28D9" text-anchor="middle">3. RERANKER</text>
+            <text x="772" y="168" font-family="Inter, sans-serif" font-size="10.5" font-weight="600" fill="#0F172A" text-anchor="middle">bge-reranker-v2</text>
+            <text x="772" y="183" font-family="JetBrains Mono, monospace" font-size="9" fill="#7C3AED" text-anchor="middle">Cross-Encoder (Top-30)</text>
+
+            <!-- Arrow: Reranker and Edge Cache -> Final Output -->
+            <path d="M510 35 H772 V125" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-emerald)" />
+
+            <!-- Marker definitions -->
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 7 5 L 0 9 z" fill="#64748B" />
+              </marker>
+              <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 7 5 L 0 9 z" fill="#059669" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+      </section>
+
+      <!-- Section 1: Ablation Results (English Dev Split) -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">1. Ablation Results (English Dev Split)</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Evaluated on frozen Amazon ESCI benchmark (<code>small_version=1</code>, <code>product_locale='us'</code>, 300 dev queries over 29,844 catalog products).
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-md">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+              <tr>
+                <th class="py-2.5 px-3">Configuration Stage</th>
+                <th class="py-2.5 px-3 font-mono-tabular">NDCG@10</th>
+                <th class="py-2.5 px-3 font-mono-tabular">Recall@50</th>
+                <th class="py-2.5 px-3 font-mono-tabular">MRR@10</th>
+                <th class="py-2.5 px-3 font-mono-tabular">p95 Latency</th>
+                <th class="py-2.5 px-3 font-mono-tabular">Gain vs BM25</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono-tabular text-slate-800">
+              @for (row of ablationRows; track row.configuration) {
+                <tr [class]="row.configuration.includes('Rerank') ? 'bg-blue-50/40 font-semibold' : 'hover:bg-slate-50/50'">
+                  <td class="py-2.5 px-3 font-sans">
+                    <strong>{{ row.configuration }}</strong>
+                    <div class="text-[11px] text-slate-500 font-normal">{{ row.note }}</div>
+                  </td>
+                  <td class="py-2.5 px-3">{{ row.ndcg10.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.recall50.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.mrr10.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.p95LatencyMs.toFixed(1) }} ms</td>
+                  <td class="py-2.5 px-3 font-bold" [class]="row.deltaPercent.startsWith('+') ? 'text-emerald-700' : 'text-slate-500'">
+                    {{ row.deltaPercent }}
+                  </td>
+                </tr>
+              }
+            </tbody>
           </table>
         </div>
-      </div>
-    </div>
-  </section>
+
+        <div class="mt-4 p-3.5 rounded bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1.5">
+          <div class="font-bold text-slate-900">Key Observations:</div>
+          <ul class="list-disc pl-4 space-y-1 text-slate-600">
+            <li><strong>Dense Retrieval Leap:</strong> Adding BGE-M3 (768d Matryoshka) boosts Recall@50 by <strong>+12.5% abs (50.97% &rarr; 63.50%)</strong>, successfully recovering fuzzy/semantic hits keyword search misses.</li>
+            <li><strong>Hybrid Consensus:</strong> RRF fusion achieves <strong>0.5132 NDCG@10</strong> (+23.0% lift) while keeping online latency at <strong>364ms</strong>.</li>
+            <li><strong>Peak Accuracy Trade-off:</strong> Cross-Encoder reranking delivers the maximum <strong>0.5810 NDCG@10</strong> (+39.2% over BM25) and <strong>0.7939 MRR@10</strong>. High CPU latency (~59s p95) validates our architecture restricting rerankers to edge-cached responses.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 2: Cross-Lingual Evaluation (3 Locales × 4 Configurations) -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">2. Cross-Lingual Evaluation (3 Locales × 4 Configurations)</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Querying translated queries against the unchanged English product catalog without catalog re-indexing.
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-md">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold font-mono-tabular">
+              <tr>
+                <th class="py-2.5 px-3 font-sans">Query Locale</th>
+                <th class="py-2.5 px-3">BM25</th>
+                <th class="py-2.5 px-3">Dense (BGE-M3)</th>
+                <th class="py-2.5 px-3">Hybrid (RRF)</th>
+                <th class="py-2.5 px-3">Hybrid + Rerank</th>
+                <th class="py-2.5 px-3 font-sans">Cross-Lingual Behavior</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono-tabular text-slate-800">
+              @for (row of crossLingualRows; track row.locale) {
+                <tr class="hover:bg-slate-50/50">
+                  <td class="py-2.5 px-3 font-sans font-bold">
+                    {{ row.localeName }}
+                  </td>
+                  <td class="py-2.5 px-3" [class.text-rose-600]="row.bm25 < 0.1">{{ row.bm25.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3 text-blue-700 font-semibold">{{ row.dense.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.hybrid.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3 text-emerald-700 font-bold">{{ row.hybridRerank.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3 font-sans text-slate-600 text-[11px]">{{ row.gainComment }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 3: Dimension Ablation (Matryoshka Truncation) -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">3. Dimension Ablation (Matryoshka Truncation)</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            BGE-M3 Matryoshka dimension truncation performance and storage footprint on Neon Postgres.
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-md">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold font-mono-tabular">
+              <tr>
+                <th class="py-2.5 px-3 font-sans">Vector Dimension</th>
+                <th class="py-2.5 px-3">NDCG@10</th>
+                <th class="py-2.5 px-3">Recall@50</th>
+                <th class="py-2.5 px-3">pgvector Table Size</th>
+                <th class="py-2.5 px-3">HNSW Build Time</th>
+                <th class="py-2.5 px-3 font-sans">Neon Free Tier (500MB) Analysis</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono-tabular text-slate-800">
+              @for (row of dimensionRows; track row.dim) {
+                <tr [class]="row.dim === 768 ? 'bg-emerald-50/40 font-semibold' : 'hover:bg-slate-50/50'">
+                  <td class="py-2.5 px-3 font-sans font-bold">
+                    {{ row.dim }}d ({{ row.label }})
+                  </td>
+                  <td class="py-2.5 px-3">{{ row.ndcg10.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.recall50.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.tableSizeMb }} MB</td>
+                  <td class="py-2.5 px-3">{{ row.buildTimeSec }} s</td>
+                  <td class="py-2.5 px-3 font-sans text-slate-600 text-[11px]">{{ row.quotaNote }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 4: RRF Parameter Sensitivity & Diagnostics -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">4. RRF Parameter Sensitivity & Diagnostics</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Reciprocal Rank Fusion smoothing parameter sensitivity curve: <code>RRF = &Sigma; 1/(k + rank)</code>.
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-md">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold font-mono-tabular">
+              <tr>
+                <th class="py-2.5 px-3 font-sans">RRF Constant</th>
+                <th class="py-2.5 px-3">NDCG@10</th>
+                <th class="py-2.5 px-3">Recall@50</th>
+                <th class="py-2.5 px-3">MRR@10</th>
+                <th class="py-2.5 px-3">p95 Latency</th>
+                <th class="py-2.5 px-3 font-sans">Ranking Behavior Profile</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono-tabular text-slate-800">
+              @for (row of rrfRows; track row.kParam) {
+                <tr [class]="row.kValue === 60 ? 'bg-blue-50/40 font-semibold' : 'hover:bg-slate-50/50'">
+                  <td class="py-2.5 px-3 font-sans font-bold">{{ row.kParam }}</td>
+                  <td class="py-2.5 px-3">{{ row.ndcg10.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.recall50.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.mrr10.toFixed(4) }}</td>
+                  <td class="py-2.5 px-3">{{ row.p95LatencyMs.toFixed(1) }} ms</td>
+                  <td class="py-2.5 px-3 font-sans text-slate-600 text-[11px]">{{ row.behaviorNote }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 5: Engineering & Indexing Metrics -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">5. Engineering & Indexing Metrics</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Resource utilization benchmarks against strict hardware and budget limits.
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-md">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+              <tr>
+                <th class="py-2.5 px-3">Metric Dimension</th>
+                <th class="py-2.5 px-3 font-mono-tabular">Measured Value</th>
+                <th class="py-2.5 px-3 font-mono-tabular">Constraint / Ceiling</th>
+                <th class="py-2.5 px-3 text-center">Status</th>
+                <th class="py-2.5 px-3">Production Rationale</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-800">
+              @for (row of engineeringRows; track row.metric) {
+                <tr class="hover:bg-slate-50/50">
+                  <td class="py-2.5 px-3 font-semibold">{{ row.metric }}</td>
+                  <td class="py-2.5 px-3 font-mono-tabular font-bold text-slate-900">{{ row.measuredValue }}</td>
+                  <td class="py-2.5 px-3 font-mono-tabular text-slate-500">{{ row.constraintTarget }}</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      {{ row.status }}
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 text-slate-600 text-[11px]">{{ row.description }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 6: Metrics & Conventions -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">6. Metrics & Conventions</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Mathematical gain conventions and evaluation reproducibility rules.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 mb-2">Amazon ESCI Relevance Gain Mapping</h3>
+            <table class="w-full text-left text-xs border border-slate-200 rounded-md">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold font-mono-tabular">
+                <tr>
+                  <th class="py-2 px-2.5">Code</th>
+                  <th class="py-2 px-2.5 font-sans">ESCI Label</th>
+                  <th class="py-2 px-2.5">Gain</th>
+                  <th class="py-2 px-2.5 font-sans">Evaluation Semantics</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-mono-tabular text-slate-800">
+                @for (c of relevanceConventions; track c.code) {
+                  <tr>
+                    <td class="py-2 px-2.5 font-bold">{{ c.code }}</td>
+                    <td class="py-2 px-2.5 font-sans">{{ c.label }}</td>
+                    <td class="py-2 px-2.5 font-bold text-blue-700">{{ c.gain }}</td>
+                    <td class="py-2 px-2.5 font-sans text-[11px] text-slate-600">{{ c.meaning }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3.5 rounded bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2">
+            <h3 class="text-xs font-bold text-slate-800">Evaluation Guardrails & Conventions</h3>
+            <ul class="list-disc pl-4 space-y-1.5 text-slate-600">
+              <li><strong>Definition of "Relevant":</strong> Strictly defined as <strong>gain &gt; 0</strong> (Exact, Substitute, and Complement count towards Recall@k and MRR@k).</li>
+              <li><strong>Zero-Leakage Unlabelled Queries:</strong> Queries with empty qrels are <strong>skipped</strong> and reported, never penalized as 0.</li>
+              <li><strong>True Full-Corpus Retrieval:</strong> Evaluated against the entire 29,844 catalog items, not pre-filtered candidate pools. Unjudged hits receive gain 0, reflecting real-world difficulty.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: Known Limitations -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">7. Known Limitations</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Documented engineering trade-offs and operational boundary constraints.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          @for (lim of knownLimitations; track lim.title; let i = $index) {
+            <div class="p-3.5 rounded-md border border-slate-200 bg-slate-50/50 text-xs space-y-1.5">
+              <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-700 inline-flex items-center justify-center font-mono-tabular text-[10px]">
+                  {{ i + 1 }}
+                </span>
+                <span>{{ lim.title }}</span>
+              </div>
+              <p class="text-slate-600 leading-relaxed text-[11px]">
+                {{ lim.description }}
+              </p>
+            </div>
+          }
+        </div>
+      </section>
+
+    </main>
+  }
+
 </div>

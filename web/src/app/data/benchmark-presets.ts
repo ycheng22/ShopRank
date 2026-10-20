@@ -1,0 +1,392 @@
+import { PresetBenchmark } from '../models/search.model';
+
+export const BENCHMARK_PRESETS: PresetBenchmark[] = [
+  {
+    id: 'wireless-earbuds',
+    query: 'wireless earbuds',
+    locale: 'en',
+    localeDisplay: 'English',
+    categoryNote: 'Short, high-traffic',
+    totalHits: 105,
+    latencyMs: { bm25: 3.1, dense: 6.4, rerank: 18.2 },
+    docs: [
+      {
+        asin: 'B07Z5YMPFM',
+        title: 'Wireless Earbuds Bluetooth 5.0, GPED True Wireless Earbuds Headphones with Charging Case, 20Hrs Playback, One-Step...',
+        snippet: 'Pairing, IP67 Waterproof Stereo Bluetooth Earbuds with Mic for Android/iPhone(White) GPED In-ear Fashion & Comfortab...',
+        fullDescription: 'Pairing, IP67 Waterproof Stereo Bluetooth Earbuds with Mic for Android/iPhone (White). GPED In-ear Fashion & Comfortable Design with 20Hrs total playback and auto one-step pairing.',
+        category: 'Electronics > Headphones > Earbud Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 1,
+        bm25RawScore: 18.42,
+        denseRank: 2,
+        denseCosine: 0.8942,
+        rerankLogit: 0.9612,
+        matchedTerms: ['wireless', 'earbuds', 'bluetooth 5.0'],
+        explainNote: 'Top RRF consensus candidate: Rank #1 in BM25 + Rank #2 in Dense embeddings.'
+      },
+      {
+        asin: 'B088FHZGX1',
+        title: 'Bluetooth 5.0 Headphones Wireless EarbudsWaterproof Stereo Calls in-Ear Smart Noise Reduction Fast Charging Case Built...',
+        snippet: 'in Mic Headset, for iPhone/Apple/airpods/Android/Samsung, Sports Earbud advantage: ♥Incredible Music Experienc...',
+        fullDescription: 'Built-in Mic Headset for iPhone/Apple/AirPods/Android/Samsung, Sports Earbud advantage: Incredible Music Experience, CVC 8.0 Smart Noise Reduction and Fast Charging Case.',
+        category: 'Electronics > Headphones > Earbud Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 3,
+        bm25RawScore: 17.15,
+        denseRank: 3,
+        denseCosine: 0.8810,
+        rerankLogit: 0.9240,
+        matchedTerms: ['wireless', 'earbuds', 'headphones'],
+        explainNote: 'Strong reciprocal rank agreement (#3 BM25, #3 Dense).'
+      },
+      {
+        asin: 'B07RGZ5NKS',
+        title: 'TOZO T10 Bluetooth 5.3 Wireless Earbuds with Wireless Charging Case IPX8 Waterproof Stereo Headphones in Ear Built in...',
+        snippet: 'Mic Headset Premium Sound with Deep Bass for Sport Black. ORIGX Acoustic Technology & 45Hrs playtime...',
+        fullDescription: 'TOZO T10 Bluetooth 5.3 Wireless Earbuds with Wireless Charging Case IPX8 Waterproof Stereo Headphones in Ear Built in Mic Headset Premium Sound with Deep Bass for Sport Black.',
+        category: 'Electronics > Headphones > Earbud Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 5,
+        bm25RawScore: 16.08,
+        denseRank: 1,
+        denseCosine: 0.9125,
+        rerankLogit: 0.9845,
+        matchedTerms: ['wireless', 'earbuds', 'charging case'],
+        explainNote: 'Rank #1 in Dense & #1 in Cross-Encoder Rerank; rises to #1 when Rerank is enabled.'
+      },
+      {
+        asin: 'B0869J7919',
+        title: 'Silicone Protective Case Cover Compatible with Wireless Earbuds Charging Case with Keychain Carabiner Clip (Front LED...',
+        snippet: 'Visible) Shockproof Soft Skin Sleeve Accessory for True Wireless Earbuds (Black, Earbuds Not Included)...',
+        fullDescription: 'Silicone Protective Case Cover Compatible with Wireless Earbuds Charging Case with Keychain Carabiner Clip (Front LED Visible) Shockproof Soft Skin Sleeve Accessory (Earbuds Not Included).',
+        category: 'Electronics > Accessories > Headphone Cases',
+        esciLabel: 'Complement',
+        bm25Rank: 2,
+        bm25RawScore: 17.85,
+        denseRank: 14,
+        denseCosine: 0.6820,
+        rerankLogit: 0.1420,
+        matchedTerms: ['wireless', 'earbuds', 'case'],
+        explainNote: 'BM25 ranked #2 due to term frequency; suppressed by Dense (#14) and Reranker (Complement).'
+      }
+    ]
+  },
+  {
+    id: 'hiking-water-bottle',
+    query: 'stainless steel insulated water bottle for hiking 32 oz',
+    locale: 'en',
+    localeDisplay: 'English',
+    categoryNote: 'Long, multi-attribute',
+    totalHits: 84,
+    latencyMs: { bm25: 4.8, dense: 7.1, rerank: 21.5 },
+    docs: [
+      {
+        asin: 'B07Y2W7B9V',
+        title: 'Hydro Flask Wide Mouth Vacuum Insulated Stainless Steel Water Bottle with BPA-Free Flex Cap, 32 oz, Black',
+        snippet: 'TempShield double-wall vacuum insulation keeps drinks cold up to 24 hours and hot up to 12 hours for trail & outdoor...',
+        fullDescription: 'Hydro Flask 32 oz Wide Mouth Vacuum Insulated Stainless Steel Water Bottle. 18/8 pro-grade stainless steel construction built for outdoor camping, trail backpacking, and hiking.',
+        category: 'Sports & Outdoors > Outdoor Recreation > Camping & Hiking > Hydration',
+        esciLabel: 'Exact',
+        bm25Rank: 2,
+        bm25RawScore: 22.10,
+        denseRank: 1,
+        denseCosine: 0.9280,
+        rerankLogit: 0.9780,
+        matchedTerms: ['stainless steel', 'insulated', 'water bottle', '32 oz'],
+        explainNote: 'Satisfies all 5 constraints; Dense embeddings bridge "trail/backpacking" to "hiking".'
+      },
+      {
+        asin: 'B0823G82X5',
+        title: 'Iron Flask Sports Water Bottle - 32 Oz, 3 Lids (Straw Lid), Leak Proof Vacuum Insulated Stainless Steel for Hiking...',
+        snippet: 'Double Walled Thermo Mug Metal Canteen for Gym, Camping, Hiking & Cycling (Midnight Black, 32 Ounce)...',
+        fullDescription: 'Iron Flask Sports Water Bottle - 32 Oz, 3 Lids Included, Leak Proof Vacuum Insulated Stainless Steel Double Walled Thermo Canteen for Hiking, Camping, and Outdoor Sports.',
+        category: 'Sports & Outdoors > Exercise & Fitness > Accessories > Water Bottles',
+        esciLabel: 'Exact',
+        bm25Rank: 1,
+        bm25RawScore: 24.65,
+        denseRank: 2,
+        denseCosine: 0.9195,
+        rerankLogit: 0.9710,
+        matchedTerms: ['stainless steel', 'insulated', 'water bottle', 'hiking', '32 oz'],
+        explainNote: 'Contains all 5 exact query attributes in product title (#1 BM25, #2 Dense).'
+      },
+      {
+        asin: 'B07K1T6D8P',
+        title: 'ThermoFlask Double Wall Vacuum Insulated Stainless Steel Water Bottle for Hiking, 24 Ounce, Cobalt Blue',
+        snippet: 'Keeps beverages ice-cold for 24 hrs, BPA-free hydration flask with spout lid for hiking and fitness...',
+        fullDescription: 'ThermoFlask Double Wall Vacuum Insulated Stainless Steel Water Bottle for Hiking, 24 Ounce. Food-grade 18/8 stainless steel.',
+        category: 'Sports & Outdoors > Water Bottles',
+        esciLabel: 'Substitute',
+        bm25Rank: 3,
+        bm25RawScore: 19.80,
+        denseRank: 6,
+        denseCosine: 0.8140,
+        rerankLogit: 0.5420,
+        matchedTerms: ['stainless steel', 'insulated', 'water bottle', 'hiking'],
+        explainNote: 'Substitute: Matches material and activity ("hiking"), but capacity is 24 oz instead of 32 oz.'
+      }
+    ]
+  },
+  {
+    id: 'typo-speaker',
+    query: 'blouetooth speaker',
+    locale: 'en',
+    localeDisplay: 'English',
+    categoryNote: 'Misspelling',
+    totalHits: 62,
+    latencyMs: { bm25: 2.4, dense: 6.8, rerank: 19.0 },
+    docs: [
+      {
+        asin: 'B09GJVTRNZ',
+        title: 'JBL Flip 6 - Portable Bluetooth Speaker, Powerful Sound and Deep Bass, IPX7 Waterproof, 12 Hours of Playtime...',
+        snippet: 'PartyBoost for multi-speaker pairing, rugged fabric material for outdoor, travel and home audio (Black)...',
+        fullDescription: 'JBL Flip 6 Portable Bluetooth Speaker, Powerful Sound and Deep Bass, IPX7 Waterproof, 12 Hours of Playtime, JBL PartyBoost.',
+        category: 'Electronics > Portable Audio & Video > Portable Bluetooth Speakers',
+        esciLabel: 'Exact',
+        bm25Rank: 12,
+        bm25RawScore: 7.40,
+        denseRank: 1,
+        denseCosine: 0.9045,
+        rerankLogit: 0.9680,
+        matchedTerms: ['speaker', 'subword: blouetooth -> bluetooth'],
+        explainNote: 'BM25 missed misspelled token "blouetooth" (Rank #12); recovered to #1 via Dense subword embeddings.'
+      },
+      {
+        asin: 'B0748N1BZD',
+        title: 'Anker Soundcore 2 Portable Bluetooth Speaker with 12W Stereo Sound, Bluetooth 5, BassUp, IPX7 Waterproof, 24-Hour...',
+        snippet: 'Playtime, Wireless Stereo Pairing, Speaker for Home, Outdoors, Travel, Dual-Driver Zero-Distortion...',
+        fullDescription: 'Anker Soundcore 2 Portable Bluetooth Speaker with 12W Stereo Sound, Bluetooth 5, BassUp, IPX7 Waterproof, 24-Hour Playtime.',
+        category: 'Electronics > Portable Audio & Video > Portable Bluetooth Speakers',
+        esciLabel: 'Exact',
+        bm25Rank: 9,
+        bm25RawScore: 8.15,
+        denseRank: 2,
+        denseCosine: 0.8920,
+        rerankLogit: 0.9510,
+        matchedTerms: ['speaker', 'subword: blouetooth -> bluetooth'],
+        explainNote: 'Dense character n-gram representation aligns "blouetooth" with "Bluetooth" (0.892 cosine).'
+      }
+    ]
+  },
+  {
+    id: 'zh-earbuds',
+    query: '蓝牙耳机',
+    locale: 'zh',
+    localeDisplay: 'Chinese',
+    categoryNote: 'Cross-lingual (Chinese)',
+    totalHits: 96,
+    latencyMs: { bm25: 1.8, dense: 7.2, rerank: 20.4 },
+    docs: [
+      {
+        asin: 'B09JQMJHXY',
+        title: 'Apple AirPods Pro (2nd Gen) Wireless Earbuds, Up to 2X More Active Noise Cancelling, Adaptive Transparency, Bluetooth...',
+        snippet: 'Personalized Spatial Audio, MagSafe Charging Case (USB-C) Sweat and Water Resistant Bluetooth Headphones...',
+        fullDescription: 'Apple AirPods Pro (2nd Generation) Wireless Earbuds with MagSafe Charging Case. Active Noise Cancellation and Bluetooth 5.3 connectivity.',
+        category: 'Electronics > Headphones > Earbud Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 80,
+        bm25RawScore: 0.00,
+        denseRank: 1,
+        denseCosine: 0.8890,
+        rerankLogit: 0.9640,
+        matchedTerms: ['蓝牙 -> Bluetooth', '耳机 -> Earbuds'],
+        explainNote: 'Zero BM25 lexical match (English index); retrieved at Rank #1 by multilingual Dense encoder.'
+      },
+      {
+        asin: 'B07Z5YMPFM',
+        title: 'Wireless Earbuds Bluetooth 5.0, GPED True Wireless Earbuds Headphones with Charging Case, 20Hrs Playback, One-Step...',
+        snippet: 'Pairing, IP67 Waterproof Stereo Bluetooth Earbuds with Mic for Android/iPhone(White) GPED In-ear Fashion & Comfortab...',
+        fullDescription: 'GPED True Wireless Earbuds Bluetooth 5.0 Headphones with Charging Case, 20Hrs Playback, IP67 Waterproof Stereo Earphones.',
+        category: 'Electronics > Headphones > Earbud Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 81,
+        bm25RawScore: 0.00,
+        denseRank: 2,
+        denseCosine: 0.8765,
+        rerankLogit: 0.9410,
+        matchedTerms: ['蓝牙 -> Bluetooth', '耳机 -> Headphones'],
+        explainNote: 'Cross-lingual semantic match (zh -> en); try unchecking "Dense" above to see lexical failure.'
+      }
+    ]
+  },
+  {
+    id: 'fr-headphones',
+    query: 'casque sans fil',
+    locale: 'fr',
+    localeDisplay: 'French',
+    categoryNote: 'Cross-lingual (French)',
+    totalHits: 88,
+    latencyMs: { bm25: 2.1, dense: 6.9, rerank: 19.8 },
+    docs: [
+      {
+        asin: 'B09XS7JWHH',
+        title: 'Sony WH-1000XM5 Wireless Industry Leading Noise Canceling Headphones with Auto Noise Canceling Optimizer, Crystal...',
+        snippet: 'Clear Hands-Free Calling, and Alexa Voice Control, Over-Ear Bluetooth Headset, 30-Hour Battery Life (Black)...',
+        fullDescription: 'Sony WH-1000XM5 Wireless Industry Leading Noise Canceling Over-Ear Headphones with 8 microphones and 30-hour battery.',
+        category: 'Electronics > Headphones > Over-Ear Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 64,
+        bm25RawScore: 0.45,
+        denseRank: 1,
+        denseCosine: 0.9012,
+        rerankLogit: 0.9750,
+        matchedTerms: ['casque -> Over-Ear Headset', 'sans fil -> Wireless'],
+        explainNote: 'Multilingual dense vector maps French "casque sans fil" to Over-Ear Wireless Headphones.'
+      },
+      {
+        asin: 'B0CCZ26B5V',
+        title: 'Bose QuietComfort Wireless Noise Cancelling Headphones, Bluetooth Over Ear Headphones with Up To 24 Hours of Battery...',
+        snippet: 'Life, Adjustable EQ, Quiet and Aware Modes, Soft Earcups for Travel & Office (Black)...',
+        fullDescription: 'Bose QuietComfort Wireless Noise Cancelling Over-Ear Headphones with high-fidelity audio and world-class noise cancellation.',
+        category: 'Electronics > Headphones > Over-Ear Headphones',
+        esciLabel: 'Exact',
+        bm25Rank: 70,
+        bm25RawScore: 0.00,
+        denseRank: 2,
+        denseCosine: 0.8895,
+        rerankLogit: 0.9610,
+        matchedTerms: ['casque -> Headphones', 'sans fil -> Wireless'],
+        explainNote: 'Cross-lingual dense retrieval Rank #2.'
+      }
+    ]
+  },
+  {
+    id: 'iphone-complement-trap',
+    query: 'iphone 14 pro',
+    locale: 'en',
+    localeDisplay: 'English',
+    categoryNote: 'Complement trap',
+    totalHits: 142,
+    latencyMs: { bm25: 3.4, dense: 6.5, rerank: 22.1 },
+    docs: [
+      {
+        asin: 'B0BDJ279KF',
+        title: 'Spigen Ultra Hybrid MagFit Designed for iPhone 14 Pro Case (2022) - Compatible with MagSafe Clear Phone Case for iPhone 14 Pro...',
+        snippet: 'Anti-Yellowing Military-Grade Drop Protection TPU Bumper Cover for Apple iPhone 14 Pro 6.1 Inch (Crystal Clear)...',
+        fullDescription: 'Spigen Ultra Hybrid MagFit Designed for iPhone 14 Pro Case (2022) - Compatible with MagSafe Clear Phone Case for iPhone 14 Pro 6.1".',
+        category: 'Cell Phones & Accessories > Cases, Holsters & Sleeves',
+        esciLabel: 'Complement',
+        bm25Rank: 1,
+        bm25RawScore: 26.80,
+        denseRank: 3,
+        denseCosine: 0.8210,
+        rerankLogit: 0.1840,
+        matchedTerms: ['iphone 14 pro (x3)', 'for iphone 14 pro'],
+        explainNote: 'COMPLEMENT TRAP: Repeats "iPhone 14 Pro" 3x. Ranks #1 in RRF unless "Rerank" is enabled!'
+      },
+      {
+        asin: 'B0BDH65P4Q',
+        title: 'amFilm OneTouch 2+2 Pack for iPhone 14 Pro 6.1 Inch Tempered Glass Screen Protector & Camera Lens Protector...',
+        snippet: 'Easy Installation Frame, Case Friendly, 9H Hardness Anti-Scratch HD Clear Glass for iPhone 14 Pro...',
+        fullDescription: 'amFilm OneTouch 2+2 Pack Designed for iPhone 14 Pro 6.1 Inch Tempered Glass Screen Protector & Camera Lens Protector.',
+        category: 'Cell Phones & Accessories > Maintenance > Screen Protectors',
+        esciLabel: 'Complement',
+        bm25Rank: 2,
+        bm25RawScore: 24.90,
+        denseRank: 5,
+        denseCosine: 0.7950,
+        rerankLogit: 0.1250,
+        matchedTerms: ['for iphone 14 pro (x2)'],
+        explainNote: 'COMPLEMENT TRAP: Accessory screen protector. Check "Rerank" in toolbar to demote.'
+      },
+      {
+        asin: 'B0BN72FYFG',
+        title: 'Apple iPhone 14 Pro, 256GB, Space Black - Unlocked (Renewed Premium) 6.1" Super Retina XDR Display with ProMotion...',
+        snippet: 'A16 Bionic Chip, 48MP Main Camera System, Dynamic Island, All-Day Battery Life, 5G Capable Smartphone...',
+        fullDescription: 'Apple iPhone 14 Pro Smartphone, 256GB, Space Black - Unlocked. Features 6.1-inch Super Retina XDR display, A16 Bionic, and 48MP Pro camera.',
+        category: 'Cell Phones & Accessories > Cell Phones',
+        esciLabel: 'Exact',
+        bm25Rank: 6,
+        bm25RawScore: 19.10,
+        denseRank: 1,
+        denseCosine: 0.9410,
+        rerankLogit: 0.9920,
+        matchedTerms: ['apple iphone 14 pro', 'Entity: Smartphone'],
+        explainNote: 'Actual iPhone 14 Pro hardware (#6 BM25, #1 Dense). Promoted to #1 when Rerank is checked.'
+      }
+    ]
+  },
+  {
+    id: 'resin-mold',
+    query: 'silicone mold for resin jewelry making',
+    locale: 'en',
+    localeDisplay: 'English',
+    categoryNote: 'Long-tail, niche',
+    totalHits: 39,
+    latencyMs: { bm25: 3.9, dense: 6.2, rerank: 17.6 },
+    docs: [
+      {
+        asin: 'B07P5Y3V2K',
+        title: 'LET\'S RESIN Jewelry Resin Molds, Silicone Molds for Epoxy Resin Casting with Keychain Pendant Earring Cabochon Gems...',
+        snippet: 'Flexible Reusable Silicone Casting Molds for DIY Jewelry Making, UV Resin & Polymer Clay Craft...',
+        fullDescription: 'LET\'S RESIN Jewelry Resin Molds, Silicone Molds for Epoxy Resin Casting with Keychain, Pendant, and Earring Cavities for DIY Jewelry Making.',
+        category: 'Arts, Crafts & Sewing > Beading & Jewelry Making > Jewelry Casting > Molds',
+        esciLabel: 'Exact',
+        bm25Rank: 1,
+        bm25RawScore: 25.40,
+        denseRank: 1,
+        denseCosine: 0.9380,
+        rerankLogit: 0.9850,
+        matchedTerms: ['silicone', 'mold', 'resin', 'jewelry making'],
+        explainNote: 'Exact long-tail alignment across both BM25 (#1) and Dense (#1) retrievers.'
+      },
+      {
+        asin: 'B085T7W93L',
+        title: '247-Piece Silicone Resin Jewelry Making Kit with Silicone Molds, Dried Flowers, Glitter Sequins & Hand Twist Drill...',
+        snippet: 'Complete Starter Epoxy Mould Set for Necklace, Bracelet, Pendant and Keychain Craft...',
+        fullDescription: '247-Piece Silicone Resin Jewelry Making Kit with Silicone Molds, Dried Flowers, Glitter Sequins, Jump Rings, and Twist Drill.',
+        category: 'Arts, Crafts & Sewing > Beading & Jewelry Making > Jewelry Making Kits',
+        esciLabel: 'Exact',
+        bm25Rank: 2,
+        bm25RawScore: 23.15,
+        denseRank: 2,
+        denseCosine: 0.9110,
+        rerankLogit: 0.9520,
+        matchedTerms: ['silicone', 'resin', 'jewelry making', 'molds'],
+        explainNote: 'Strong consensus Rank #2 across lexical and semantic stages.'
+      }
+    ]
+  },
+  {
+    id: 'unicorn-sticker-failure',
+    query: 'unicorn holographic laptop sticker pack aesthetic',
+    locale: 'en',
+    localeDisplay: 'English',
+    categoryNote: 'Deliberate failure',
+    totalHits: 12,
+    latencyMs: { bm25: 2.8, dense: 6.0, rerank: 16.5 },
+    docs: [
+      {
+        asin: 'B07Q6NH47J',
+        title: 'MOSISO Laptop Sleeve Bag 15.6 Inch, Holographic Iridescent Waterproof Protective Notebook Carrying Case with Pocket...',
+        snippet: 'Compatible with MacBook Air/Pro, HP, Dell, Lenovo, Aesthetic Iridescent TPU Shell...',
+        fullDescription: 'MOSISO Laptop Sleeve Bag 15.6 Inch, Holographic Iridescent Waterproof Protective Carrying Case.',
+        category: 'Electronics > Computers & Accessories > Laptop Accessories > Bags, Cases & Sleeves',
+        esciLabel: 'Irrelevant',
+        bm25Rank: 1,
+        bm25RawScore: 11.20,
+        denseRank: 1,
+        denseCosine: 0.5840,
+        rerankLogit: 0.0410,
+        matchedTerms: ['holographic', 'laptop', 'aesthetic'],
+        explainNote: 'OOD QUERY: Electronics index has no "unicorn stickers". Enable Rerank to see score drop to 0.0410.'
+      },
+      {
+        asin: 'B0819K329B',
+        title: '5-Pack Webcam Cover Slide, Ultra-Thin Laptop Camera Blocker Sticker Shield for MacBook Pro, iPad, iPhone (Matte Black)...',
+        snippet: 'Privacy Protector Adhesive Slider Pack for Laptop & Tablet Screens...',
+        fullDescription: '5-Pack Webcam Cover Slide, Ultra-Thin Laptop Camera Privacy Sticker Shield for MacBook Pro and Laptops.',
+        category: 'Electronics > Computers & Accessories > Laptop Accessories',
+        esciLabel: 'Irrelevant',
+        bm25Rank: 2,
+        bm25RawScore: 10.45,
+        denseRank: 4,
+        denseCosine: 0.4910,
+        rerankLogit: 0.0180,
+        matchedTerms: ['laptop', 'sticker', 'pack'],
+        explainNote: 'Lexical false positive on tokens "laptop", "sticker", "pack"; Cross-Encoder rejects (0.0180).'
+      }
+    ]
+  }
+];
